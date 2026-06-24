@@ -143,14 +143,17 @@ STAGES = {
     },
 }
 
+import requests
+
+API_URL = "http://54.208.227.213:8000/ask"
+
 # Mocked RAG backend
 def get_rag_response(question: str):
-    """
-    --- PLUG IN ROHAN'S RAG API HERE ---
-    Replace the mocked logic below with:
-        resp = requests.post(ROHAN_API_URL, json={"query": question}).json()
-        return resp["answer"], resp["sources"]
-    """
+    response = requests.post(API_URL, json = {
+        "question": question,
+        "profile": {}  
+    }).json()
+    return response["answer"], []
     q = question.lower()
     if "i-20" in q or "stem" in q:
         return (
