@@ -145,7 +145,7 @@ STAGES = {
 
 import requests
 
-API_URL = "http://54.208.227.213:8000/ask"
+API_URL = "http://localhost:8000/ask"
 
 # Mocked RAG backend
 def get_rag_response(question: str):
