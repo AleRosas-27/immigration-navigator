@@ -1,11 +1,9 @@
 """
 Immigration Navigator — Streamlit demo UI
 F-1 -> OPT -> STEM OPT -> H-1B RAG assistant
-
 Run locally:
     pip install streamlit
     streamlit run app.py
-
 Backend integration: look for "PLUG IN RAG API HERE" below.
 """
 
@@ -34,12 +32,10 @@ st.markdown(
     .stApp {{ background-color: {PAGE_BG}; }}
     section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
     section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
-
     .nav-brand {{ color: {TEAL}; font-size: 15px; font-weight: 600;
                   letter-spacing: 0.02em; margin-bottom: 4px; }}
     .nav-label {{ color: {TEXT_LABEL}; font-size: 11px; letter-spacing: 0.05em;
                   margin: 14px 0 6px 0; }}
-
     /* FIX: both active and inactive stages use identical font-size: 14px */
     .stage-active {{
         background: {TEAL_DARK}; color: #9FE1CB;
@@ -55,7 +51,6 @@ st.markdown(
     }}
     .stage-icon-active {{ color: {TEAL}; font-size: 10px; }}
     .stage-icon {{ color: {TEXT_LABEL}; font-size: 10px; }}
-
     /* sidebar buttons: match stage-item exactly */
     div[data-testid="stSidebar"] .stButton button {{
         background: transparent;
@@ -73,7 +68,6 @@ st.markdown(
         background: {BUBBLE_BOT};
         color: #C2CAD4;
     }}
-
     .user-bubble {{ background: {TEAL_DARK}; color: #CFEEE2; padding: 10px 14px;
                     border-radius: 12px 12px 2px 12px; display: inline-block;
                     max-width: 80%; float: right; clear: both; line-height: 1.5; }}
@@ -81,12 +75,10 @@ st.markdown(
                    border-radius: 12px 12px 12px 2px; display: inline-block;
                    max-width: 80%; float: left; clear: both; line-height: 1.6; }}
     .cite {{ color: {TEAL}; font-weight: 600; }}
-
     .src-card {{ background: {PAGE_BG}; border-left: 2px solid {TEAL};
                  padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px; }}
     .src-id {{ color: {TEAL}; font-size: 11px; margin-bottom: 3px; }}
     .src-desc {{ color: {TEXT_LABEL}; font-size: 11px; line-height: 1.4; }}
-
     /* style the expander to match dark theme */
     .streamlit-expanderHeader {{
         background-color: {PANEL} !important;
@@ -99,110 +91,154 @@ st.markdown(
         background-color: {PANEL} !important;
         border: none !important;
     }}
-
     .stChatInput textarea {{ background: {PAGE_BG} !important; color: #C2CAD4 !important; }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Stage definitions
+import random
 
+# Stage definitions, 10+ questions per stage, 3 randomly shown each time
 STAGES = {
     "F-1 Student": {
         "icon": "◈",
-        "chips": [
+        "questions": [
             "What is CPT and am I eligible?",
-            "How do I maintain F-1 status?",
+            "How do I maintain my F-1 status?",
             "When can I apply for OPT?",
+            "Can I work off-campus on an F-1 visa?",
+            "What happens if I drop below full-time enrollment?",
+            "How many years can I stay on an F-1 visa?",
+            "What is a DSO and what do they do?",
+            "Can I transfer my F-1 to another school?",
+            "What is SEVIS and why does it matter?",
+            "Can I travel outside the US on an F-1 visa?",
+            "What is the difference between CPT and OPT?",
+            "Do I need a new I-20 if I change my major?",
         ],
     },
     "OPT": {
         "icon": "◈",
-        "chips": [
-            "Unemployment days on OPT?",
-            "When does my OPT EAD expire?",
+        "questions": [
+            "How many unemployment days am I allowed on OPT?",
+            "When does my OPT EAD card expire?",
             "Can I change employers on OPT?",
+            "When should I apply for OPT?",
+            "What happens if I exceed 90 unemployment days?",
+            "Can I work part-time on OPT?",
+            "Do I need to report a new job to my DSO?",
+            "Can I start my own business on OPT?",
+            "What is post-completion OPT?",
+            "Can I travel abroad while my OPT application is pending?",
+            "What is the difference between pre- and post-completion OPT?",
+            "How long does USCIS take to process an OPT application?",
         ],
     },
     "STEM OPT": {
         "icon": "◈",
-        "chips": [
+        "questions": [
             "Do I need a new I-20 for STEM OPT?",
-            "What is Form I-983?",
+            "What is Form I-983 and how do I fill it out?",
             "How long is the STEM OPT extension?",
+            "When should I apply for the STEM OPT extension?",
+            "Does my employer need to be E-Verify registered?",
+            "How many unemployment days am I allowed on STEM OPT?",
+            "What qualifies as a STEM degree for STEM OPT?",
+            "Can I change employers during STEM OPT?",
+            "What is the annual self-evaluation requirement?",
+            "Can I do STEM OPT at a startup or small company?",
+            "What happens if my STEM OPT employer loses E-Verify status?",
+            "Can I apply for STEM OPT if I already used OPT at a previous school?",
         ],
     },
     "H-1B": {
         "icon": "◈",
-        "chips": [
-            "What is cap-gap?",
-            "When does H-1B lottery open?",
-            "What is a specialty occupation?",
+        "questions": [
+            "What is cap-gap and how does it work?",
+            "When does the H-1B lottery typically open?",
+            "What qualifies as a specialty occupation for H-1B?",
+            "What are my options if I don't win the H-1B lottery?",
+            "How long is an H-1B visa valid?",
+            "Can my employer transfer my H-1B to a new job?",
+            "What is the difference between cap-subject and cap-exempt H-1B?",
+            "Can I work for multiple employers on H-1B?",
+            "What happens to my status during the H-1B lottery wait?",
+            "How much does it cost an employer to sponsor H-1B?",
+            "Can I apply for a green card while on H-1B?",
+            "What is an LCA and why does my employer need one?",
         ],
     },
 }
 
+import re
 import requests
 
 API_URL = "http://localhost:8000/ask"
 
-# Mocked RAG backend
+
+def parse_sources(answer: str) -> tuple:
+    """
+    Extract [Source: label, url] citations from RAG answer text.
+    The RAG prompt tells the LLM to cite every claim as:
+        [Source: label, https://uscis.gov/...]
+    This function:
+    1. Finds all unique [Source: ...] citations in the answer
+    2. Numbers them [1], [2], [3]...
+    3. Replaces the long tags with short teal [1] [2] markers in the answer
+    4. Returns the cleaned answer + structured source cards for the right panel
+    """
+    pattern = r'\[Source:\s*([^,\]]+?)(?:,\s*([^\]]*))?\]'
+    matches = re.findall(pattern, answer)
+
+    if not matches:
+        return answer, []
+
+    # Deduplicate while preserving order
+    seen = {}
+    for label, url in matches:
+        key = label.strip()
+        if key not in seen:
+            seen[key] = url.strip()
+
+    # Build numbered source cards
+    sources = []
+    label_to_num = {}
+    for i, (label, url) in enumerate(seen.items(), start=1):
+        num = f"[{i}]"
+        label_to_num[label] = num
+        sources.append({"id": num, "ref": label, "url": url})
+
+    # Replace [Source: label, url] with teal inline markers [1], [2]...
+    def replace_citation(match):
+        label = match.group(1).strip()
+        return f"<span class='cite'>{label_to_num.get(label, '')}</span>"
+
+    cleaned = re.sub(pattern, replace_citation, answer)
+    return cleaned, sources
+
+
 def get_rag_response(question: str):
-    response = requests.post(API_URL, json = {
-        "question": question,
-        "profile": {}  
-    }).json()
-    return response["answer"], []
-    q = question.lower()
-    if "i-20" in q or "stem" in q:
+    """
+    Call FastAPI backend and return (answer, sources).
+    Sources are parsed from the answer text and shown in the right panel.
+    """
+    try:
+        response = requests.post(
+            API_URL,
+            json={"question": question, "profile": {}},
+            timeout=30,
+        ).json()
+        raw_answer = response.get("answer", "No answer returned.")
+        return parse_sources(raw_answer)
+    except requests.exceptions.ConnectionError:
         return (
-            "Yes — your DSO must issue a new I-20 recommending the STEM "
-            "extension before you file Form I-765. <span class='cite'>[1][2]</span>",
-            [
-                {"id": "[1]", "ref": "8 CFR 214.2(f)(10)(ii)", "desc": "STEM OPT extension rules"},
-                {"id": "[2]", "ref": "USCIS Form I-983", "desc": "Training plan instructions"},
-            ],
+            "⚠️ Cannot connect to the backend. "
+            "Make sure API server is running on port 8000.",
+            [],
         )
-    if "unemploy" in q:
-        return (
-            "You are allowed 90 days of unemployment during your initial "
-            "12-month OPT period. <span class='cite'>[1]</span>",
-            [{"id": "[1]", "ref": "8 CFR 214.2(f)(5)(i)", "desc": "OPT unemployment limit"}],
-        )
-    if "cap-gap" in q or "cap gap" in q:
-        return (
-            "Cap-gap automatically extends your F-1 status and work "
-            "authorization if a timely H-1B petition is filed before your "
-            "OPT expires. <span class='cite'>[1]</span>",
-            [{"id": "[1]", "ref": "8 CFR 214.2(f)(5)(vi)", "desc": "Cap-gap extension"}],
-        )
-    if "cpt" in q:
-        return (
-            "CPT (Curricular Practical Training) allows F-1 students to work "
-            "off-campus in a job directly related to their major. It must be "
-            "authorized by your DSO before you begin work. <span class='cite'>[1]</span>",
-            [{"id": "[1]", "ref": "8 CFR 214.2(f)(10)(i)", "desc": "CPT authorization rules"}],
-        )
-    if "lottery" in q or "h-1b" in q or "h1b" in q:
-        return (
-            "The H-1B cap lottery typically opens in March each year for an "
-            "October 1 start date. USCIS uses a randomized selection process "
-            "when petitions exceed the annual cap of 85,000. <span class='cite'>[1]</span>",
-            [{"id": "[1]", "ref": "INA § 214(g)", "desc": "H-1B numerical cap"}],
-        )
-    if "employer" in q:
-        return (
-            "Yes — you can change employers on OPT as long as the new job is "
-            "directly related to your degree. You must report the change to "
-            "your DSO within 10 days. <span class='cite'>[1]</span>",
-            [{"id": "[1]", "ref": "SEVP Policy Guidance 0801-02", "desc": "OPT employer reporting"}],
-        )
-    return (
-        "I can help with questions about F-1, CPT, OPT, STEM OPT, and H-1B. "
-        "Try clicking a stage in the sidebar to see suggested questions.",
-        [],
-    )
+    except Exception as e:
+        return f"⚠️ Error: {str(e)}", []
 
 # Session state
 if "messages" not in st.session_state:
@@ -211,6 +247,16 @@ if "sources" not in st.session_state:
     st.session_state.sources = []
 if "active_stage" not in st.session_state:
     st.session_state.active_stage = "F-1 Student"
+if "current_chips" not in st.session_state:
+    st.session_state.current_chips = random.sample(
+        STAGES["F-1 Student"]["questions"], 3
+    )
+
+def refresh_chips(stage: str):
+    """Pick 3 new random questions for the given stage."""
+    st.session_state.current_chips = random.sample(
+        STAGES[stage]["questions"], 3
+    )
 
 # Sidebar
 with st.sidebar:
@@ -230,6 +276,7 @@ with st.sidebar:
         else:
             if st.button(f"{icon}  {stage}", key=f"stage_{stage}"):
                 st.session_state.active_stage = stage
+                refresh_chips(stage)
                 st.rerun()
 
     st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
@@ -261,8 +308,17 @@ with chat_col:
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.caption(f"Suggested questions for {active}:")
-    chips = STAGES[active]["chips"]
+
+    # Suggested chips row with shuffle button
+    chip_label_col, shuffle_col = st.columns([5, 1])
+    with chip_label_col:
+        st.caption(f"Suggested questions for {active}:")
+    with shuffle_col:
+        if st.button("🔀", key="shuffle", help="Show different questions"):
+            refresh_chips(active)
+            st.rerun()
+
+    chips = st.session_state.current_chips
     cols = st.columns(len(chips))
     clicked = None
     for col, chip in zip(cols, chips):
@@ -289,9 +345,16 @@ with source_col:
     with st.expander("SOURCES", expanded=True):
         if st.session_state.sources:
             for s in st.session_state.sources:
+                url_html = (
+                    f"<a href='{s['url']}' target='_blank' "
+                    f"style='color:{TEAL}; font-size:10px;'>↗ View source</a>"
+                    if s.get("url") else ""
+                )
                 st.markdown(
-                    f"<div class='src-card'><div class='src-id'>{s['id']} {s['ref']}</div>"
-                    f"<div class='src-desc'>{s['desc']}</div></div>",
+                    f"<div class='src-card'>"
+                    f"<div class='src-id'>{s['id']} {s['ref']}</div>"
+                    f"{url_html}"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
         else:
