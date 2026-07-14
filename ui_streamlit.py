@@ -1,9 +1,11 @@
 """
 Immigration Navigator — Streamlit demo UI
 F-1 -> OPT -> STEM OPT -> H-1B RAG assistant
+
 Run locally:
     pip install streamlit
     streamlit run app.py
+
 Backend integration: look for "PLUG IN RAG API HERE" below.
 """
 
@@ -32,10 +34,12 @@ st.markdown(
     .stApp {{ background-color: {PAGE_BG}; }}
     section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
     section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
+
     .nav-brand {{ color: {TEAL}; font-size: 15px; font-weight: 600;
                   letter-spacing: 0.02em; margin-bottom: 4px; }}
     .nav-label {{ color: {TEXT_LABEL}; font-size: 11px; letter-spacing: 0.05em;
                   margin: 14px 0 6px 0; }}
+
     /* FIX: both active and inactive stages use identical font-size: 14px */
     .stage-active {{
         background: {TEAL_DARK}; color: #9FE1CB;
@@ -51,6 +55,7 @@ st.markdown(
     }}
     .stage-icon-active {{ color: {TEAL}; font-size: 10px; }}
     .stage-icon {{ color: {TEXT_LABEL}; font-size: 10px; }}
+
     /* sidebar buttons: match stage-item exactly */
     div[data-testid="stSidebar"] .stButton button {{
         background: transparent;
@@ -68,6 +73,7 @@ st.markdown(
         background: {BUBBLE_BOT};
         color: #C2CAD4;
     }}
+
     .user-bubble {{ background: {TEAL_DARK}; color: #CFEEE2; padding: 10px 14px;
                     border-radius: 12px 12px 2px 12px; display: inline-block;
                     max-width: 80%; float: right; clear: both; line-height: 1.5; }}
@@ -75,10 +81,12 @@ st.markdown(
                    border-radius: 12px 12px 12px 2px; display: inline-block;
                    max-width: 80%; float: left; clear: both; line-height: 1.6; }}
     .cite {{ color: {TEAL}; font-weight: 600; }}
+
     .src-card {{ background: {PAGE_BG}; border-left: 2px solid {TEAL};
                  padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px; }}
     .src-id {{ color: {TEAL}; font-size: 11px; margin-bottom: 3px; }}
     .src-desc {{ color: {TEXT_LABEL}; font-size: 11px; line-height: 1.4; }}
+
     /* style the expander to match dark theme */
     .streamlit-expanderHeader {{
         background-color: {PANEL} !important;
@@ -91,6 +99,7 @@ st.markdown(
         background-color: {PANEL} !important;
         border: none !important;
     }}
+
     .stChatInput textarea {{ background: {PAGE_BG} !important; color: #C2CAD4 !important; }}
     </style>
     """,
@@ -180,8 +189,10 @@ API_URL = "http://localhost:8000/ask"
 def parse_sources(answer: str) -> tuple:
     """
     Extract [Source: label, url] citations from RAG answer text.
+
     The RAG prompt tells the LLM to cite every claim as:
         [Source: label, https://uscis.gov/...]
+
     This function:
     1. Finds all unique [Source: ...] citations in the answer
     2. Numbers them [1], [2], [3]...
