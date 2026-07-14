@@ -185,6 +185,16 @@ import requests
 
 API_URL = "http://localhost:8000/ask"
 
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.text_input("Password", type="password", key="password")
+        if st.session_state.get("password") == "berkeley2026":
+            st.session_state.authenticated = True
+        else:
+            st.stop()
+
+check_password()
+
 
 def parse_sources(answer: str) -> tuple:
     """
