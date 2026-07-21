@@ -1,114 +1,202 @@
 """
-Immigration Navigator — Streamlit demo UI
+Immigration Navigator — Streamlit UI
 F-1 -> OPT -> STEM OPT -> H-1B RAG assistant
 
 Run locally:
     pip install streamlit
-    streamlit run app.py
+    streamlit run ui_streamlit.py
 
-Backend integration: look for "PLUG IN RAG API HERE" below.
+Backend: FastAPI on port 8000
 """
 
 import streamlit as st
+import random
+import re
+import requests
+from datetime import datetime
 
-# Page config
+# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Immigration Navigator",
-    page_icon="✨",
+    page_icon="✦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Theme / colors
-TEAL = "#5DCAA5"
-TEAL_DARK = "#0F6E56"
-PANEL = "#161B22"
-PAGE_BG = "#0D1117"
+# ── Design tokens (match existing palette) ───────────────────────────────────
+TEAL       = "#5DCAA5"
+TEAL_DARK  = "#0F6E56"
+PANEL      = "#161B22"
+PAGE_BG    = "#0D1117"
 BUBBLE_BOT = "#222B35"
 TEXT_MUTED = "#8B95A1"
 TEXT_LABEL = "#6B7682"
 
-st.markdown(
-    f"""
-    <style>
-    .stApp {{ background-color: {PAGE_BG}; }}
-    section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
-    section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
+# ── Global CSS ────────────────────────────────────────────────────────────────
+st.markdown(f"""
+<style>
+/* ── Base ── */
+.stApp {{ background-color: {PAGE_BG}; }}
+section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
+section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
 
-    .nav-brand {{ color: {TEAL}; font-size: 15px; font-weight: 600;
-                  letter-spacing: 0.02em; margin-bottom: 4px; }}
-    .nav-label {{ color: {TEXT_LABEL}; font-size: 11px; letter-spacing: 0.05em;
-                  margin: 14px 0 6px 0; }}
+/* ── Sidebar nav ── */
+.nav-brand {{
+    color: {TEAL}; font-size: 15px; font-weight: 600;
+    letter-spacing: 0.02em; margin-bottom: 4px;
+}}
+.nav-label {{
+    color: {TEXT_LABEL}; font-size: 11px; letter-spacing: 0.05em;
+    margin: 14px 0 6px 0;
+}}
+.stage-active {{
+    background: {TEAL_DARK}; color: #9FE1CB;
+    font-size: 14px; font-weight: 500;
+    padding: 8px 11px; border-radius: 6px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+}}
+.stage-item {{
+    color: {TEXT_MUTED}; font-size: 14px;
+    padding: 8px 11px; border-radius: 6px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+}}
 
-    /* FIX: both active and inactive stages use identical font-size: 14px */
-    .stage-active {{
-        background: {TEAL_DARK}; color: #9FE1CB;
-        font-size: 14px; font-weight: 500;
-        padding: 8px 11px; border-radius: 6px; margin-bottom: 4px;
-        cursor: default;
-        display: flex; align-items: center; gap: 8px;
-    }}
-    .stage-item {{
-        color: {TEXT_MUTED}; font-size: 14px;
-        padding: 8px 11px; border-radius: 6px; margin-bottom: 4px;
-        display: flex; align-items: center; gap: 8px;
-    }}
-    .stage-icon-active {{ color: {TEAL}; font-size: 10px; }}
-    .stage-icon {{ color: {TEXT_LABEL}; font-size: 10px; }}
+/* ── Sidebar buttons ── */
+div[data-testid="stSidebar"] .stButton button {{
+    background: transparent; border: none;
+    color: {TEXT_MUTED}; text-align: left;
+    padding: 8px 11px; font-size: 14px; font-weight: 400;
+    width: 100%; border-radius: 6px; line-height: 1.5;
+}}
+div[data-testid="stSidebar"] .stButton button:hover {{
+    background: {BUBBLE_BOT}; color: #C2CAD4;
+}}
 
-    /* sidebar buttons: match stage-item exactly */
-    div[data-testid="stSidebar"] .stButton button {{
-        background: transparent;
-        border: none;
-        color: {TEXT_MUTED};
-        text-align: left;
-        padding: 8px 11px;
-        font-size: 14px;
-        font-weight: 400;
-        width: 100%;
-        border-radius: 6px;
-        line-height: 1.5;
-    }}
-    div[data-testid="stSidebar"] .stButton button:hover {{
-        background: {BUBBLE_BOT};
-        color: #C2CAD4;
-    }}
+/* ── Chat bubbles ── */
+.user-bubble {{
+    background: {TEAL_DARK}; color: #CFEEE2;
+    padding: 10px 14px; border-radius: 12px 12px 2px 12px;
+    display: inline-block; max-width: 80%; float: right;
+    clear: both; line-height: 1.5;
+}}
+.bot-bubble {{
+    background: {BUBBLE_BOT}; color: #C2CAD4;
+    padding: 10px 14px; border-radius: 12px 12px 12px 2px;
+    display: inline-block; max-width: 80%; float: left;
+    clear: both; line-height: 1.6;
+}}
+.cite {{ color: {TEAL}; font-weight: 600; }}
 
-    .user-bubble {{ background: {TEAL_DARK}; color: #CFEEE2; padding: 10px 14px;
-                    border-radius: 12px 12px 2px 12px; display: inline-block;
-                    max-width: 80%; float: right; clear: both; line-height: 1.5; }}
-    .bot-bubble {{ background: {BUBBLE_BOT}; color: #C2CAD4; padding: 10px 14px;
-                   border-radius: 12px 12px 12px 2px; display: inline-block;
-                   max-width: 80%; float: left; clear: both; line-height: 1.6; }}
-    .cite {{ color: {TEAL}; font-weight: 600; }}
+/* ── Source cards ── */
+.src-card {{
+    background: {PAGE_BG}; border-left: 2px solid {TEAL};
+    padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px;
+}}
+.src-id {{ color: {TEAL}; font-size: 11px; margin-bottom: 3px; }}
+.src-desc {{ color: {TEXT_LABEL}; font-size: 11px; line-height: 1.4; }}
 
-    .src-card {{ background: {PAGE_BG}; border-left: 2px solid {TEAL};
-                 padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px; }}
-    .src-id {{ color: {TEAL}; font-size: 11px; margin-bottom: 3px; }}
-    .src-desc {{ color: {TEXT_LABEL}; font-size: 11px; line-height: 1.4; }}
+/* ── Expander ── */
+.streamlit-expanderHeader {{
+    background-color: {PANEL} !important;
+    color: {TEXT_LABEL} !important;
+    font-size: 11px !important;
+    letter-spacing: 0.05em !important;
+    border: none !important;
+}}
+.streamlit-expanderContent {{
+    background-color: {PANEL} !important;
+    border: none !important;
+}}
 
-    /* style the expander to match dark theme */
-    .streamlit-expanderHeader {{
-        background-color: {PANEL} !important;
-        color: {TEXT_LABEL} !important;
-        font-size: 11px !important;
-        letter-spacing: 0.05em !important;
-        border: none !important;
-    }}
-    .streamlit-expanderContent {{
-        background-color: {PANEL} !important;
-        border: none !important;
-    }}
+/* ── Chat input ── */
+.stChatInput textarea {{
+    background: {PAGE_BG} !important;
+    color: #C2CAD4 !important;
+}}
 
-    .stChatInput textarea {{ background: {PAGE_BG} !important; color: #C2CAD4 !important; }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+/* ── Modal overlay ── */
+.modal-overlay {{
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+}}
+.modal-box {{
+    background: {PANEL}; border: 1px solid #2A3441;
+    border-radius: 16px; padding: 36px 40px;
+    width: 100%; max-width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}}
+.modal-header {{
+    color: {TEAL}; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; margin-bottom: 6px;
+}}
+.modal-title {{
+    color: #E2E8F0; font-size: 22px; font-weight: 700;
+    margin-bottom: 8px; line-height: 1.3;
+}}
+.modal-sub {{
+    color: {TEXT_MUTED}; font-size: 13px;
+    margin-bottom: 28px; line-height: 1.5;
+}}
+.progress-bar-bg {{
+    height: 4px; background: #2A3441;
+    border-radius: 2px; margin-bottom: 28px;
+}}
+.progress-bar-fill {{
+    height: 4px; background: {TEAL};
+    border-radius: 2px; transition: width 0.3s ease;
+}}
 
-import random
+/* ── Profile chip (sidebar) ── */
+.profile-chip {{
+    background: #1A2330; border: 1px solid #2A3441;
+    border-radius: 8px; padding: 10px 12px;
+    margin-bottom: 8px; font-size: 12px;
+}}
+.profile-chip-label {{
+    color: {TEXT_LABEL}; font-size: 10px;
+    letter-spacing: 0.08em; margin-bottom: 3px;
+}}
+.profile-chip-value {{
+    color: #C2CAD4; font-size: 13px; font-weight: 500;
+}}
+.profile-empty {{
+    color: {TEXT_LABEL}; font-style: italic;
+}}
 
-# Stage definitions, 10+ questions per stage, 3 randomly shown each time
+/* ── Welcome banner ── */
+.welcome-banner {{
+    background: linear-gradient(135deg, {TEAL_DARK}22, {TEAL}11);
+    border: 1px solid {TEAL}33; border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 20px;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+API_URL = "http://localhost:8000/ask"
+
+VISA_OPTIONS = [
+    "F-1 Student",
+    "F-1, currently on OPT",
+    "F-1, on STEM OPT",
+    "H-1B pending",
+    "Other / Not sure",
+]
+
+EMPLOYER_OPTIONS = [
+    "Full-time employer",
+    "Part-time employer",
+    "Multiple employers",
+    "Consulting firm",
+    "Self-employed",
+    "Not yet employed",
+]
+
+MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+DAYS   = [str(d) for d in range(1, 32)]
+YEARS  = [str(y) for y in range(datetime.now().year - 1, datetime.now().year + 6)]
+
 STAGES = {
     "F-1 Student": {
         "icon": "◈",
@@ -123,8 +211,6 @@ STAGES = {
             "Can I transfer my F-1 to another school?",
             "What is SEVIS and why does it matter?",
             "Can I travel outside the US on an F-1 visa?",
-            "What is the difference between CPT and OPT?",
-            "Do I need a new I-20 if I change my major?",
         ],
     },
     "OPT": {
@@ -139,8 +225,6 @@ STAGES = {
             "Do I need to report a new job to my DSO?",
             "Can I start my own business on OPT?",
             "What is post-completion OPT?",
-            "Can I travel abroad while my OPT application is pending?",
-            "What is the difference between pre- and post-completion OPT?",
             "How long does USCIS take to process an OPT application?",
         ],
     },
@@ -157,8 +241,6 @@ STAGES = {
             "Can I change employers during STEM OPT?",
             "What is the annual self-evaluation requirement?",
             "Can I do STEM OPT at a startup or small company?",
-            "What happens if my STEM OPT employer loses E-Verify status?",
-            "Can I apply for STEM OPT if I already used OPT at a previous school?",
         ],
     },
     "H-1B": {
@@ -170,84 +252,93 @@ STAGES = {
             "What are my options if I don't win the H-1B lottery?",
             "How long is an H-1B visa valid?",
             "Can my employer transfer my H-1B to a new job?",
-            "What is the difference between cap-subject and cap-exempt H-1B?",
-            "Can I work for multiple employers on H-1B?",
             "What happens to my status during the H-1B lottery wait?",
             "How much does it cost an employer to sponsor H-1B?",
             "Can I apply for a green card while on H-1B?",
-            "What is an LCA and why does my employer need one?",
         ],
     },
 }
 
-import re
-import requests
+# ── Session state init ────────────────────────────────────────────────────────
+defaults = {
+    "messages":       [],
+    "sources":        [],
+    "active_stage":   "F-1 Student",
+    "current_chips":  random.sample(STAGES["F-1 Student"]["questions"], 3),
+    # Onboarding
+    "show_modal":     True,
+    "modal_step":     0,      # 0-3 = questions, 4 = done
+    "modal_skipped":  False,
+    # Profile answers
+    "prof_visa":      None,
+    "prof_stem":      None,
+    "prof_grad_month": None,
+    "prof_grad_day":   None,
+    "prof_grad_year":  None,
+    "prof_employer":  None,
+    # Temp selections inside modal
+    "tmp_visa":       None,
+    "tmp_stem":       None,
+    "tmp_grad_month": None,
+    "tmp_grad_day":   None,
+    "tmp_grad_year":  None,
+    "tmp_employer":   None,
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-API_URL = "http://localhost:8000/ask"
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def refresh_chips(stage):
+    st.session_state.current_chips = random.sample(STAGES[stage]["questions"], 3)
 
-def check_password():
-    if "authenticated" not in st.session_state:
-        st.text_input("Password", type="password", key="password")
-        if st.session_state.get("password") == "berkeley2026":
-            st.session_state.authenticated = True
-        else:
-            st.stop()
-
-check_password()
-
-
-def parse_sources(answer: str) -> tuple:
-    """
-    Extract [Source: label, url] citations from RAG answer text.
-
-    The RAG prompt tells the LLM to cite every claim as:
-        [Source: label, https://uscis.gov/...]
-
-    This function:
-    1. Finds all unique [Source: ...] citations in the answer
-    2. Numbers them [1], [2], [3]...
-    3. Replaces the long tags with short teal [1] [2] markers in the answer
-    4. Returns the cleaned answer + structured source cards for the right panel
-    """
+def parse_sources(answer):
     pattern = r'\[Source:\s*([^,\]]+?)(?:,\s*([^\]]*))?\]'
     matches = re.findall(pattern, answer)
-
     if not matches:
         return answer, []
-
-    # Deduplicate while preserving order
     seen = {}
     for label, url in matches:
         key = label.strip()
         if key not in seen:
             seen[key] = url.strip()
-
-    # Build numbered source cards
     sources = []
     label_to_num = {}
     for i, (label, url) in enumerate(seen.items(), start=1):
         num = f"[{i}]"
         label_to_num[label] = num
         sources.append({"id": num, "ref": label, "url": url})
-
-    # Replace [Source: label, url] with teal inline markers [1], [2]...
     def replace_citation(match):
         label = match.group(1).strip()
         return f"<span class='cite'>{label_to_num.get(label, '')}</span>"
-
     cleaned = re.sub(pattern, replace_citation, answer)
     return cleaned, sources
 
+def build_grad_date():
+    m = st.session_state.prof_grad_month
+    d = st.session_state.prof_grad_day
+    y = st.session_state.prof_grad_year
+    if m and d and y and m != "Month" and d != "Day" and y != "Year":
+        try:
+            month_num = MONTHS.index(m) + 1
+            return f"{y}-{month_num:02d}-{int(d):02d}"
+        except Exception:
+            return ""
+    return ""
 
-def get_rag_response(question: str):
-    """
-    Call FastAPI backend and return (answer, sources).
-    Sources are parsed from the answer text and shown in the right panel.
-    """
+def build_profile():
+    return {
+        "visa_status":     st.session_state.prof_visa or "",
+        "degree_field":    st.session_state.prof_stem or "",
+        "graduation_date": build_grad_date(),
+        "employer_type":   st.session_state.prof_employer or "",
+    }
+
+def get_rag_response(question, profile):
     try:
         response = requests.post(
             API_URL,
-            json={"question": question, "profile": {}},
+            json={"question": question, "profile": profile},
             timeout=30,
         ).json()
         raw_answer = response.get("answer", "No answer returned.")
@@ -255,51 +346,320 @@ def get_rag_response(question: str):
     except requests.exceptions.ConnectionError:
         return (
             "⚠️ Cannot connect to the backend. "
-            "Make sure API server is running on port 8000.",
+            "Make sure the API server is running on port 8000.",
             [],
         )
     except Exception as e:
         return f"⚠️ Error: {str(e)}", []
 
-# Session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "sources" not in st.session_state:
-    st.session_state.sources = []
-if "active_stage" not in st.session_state:
-    st.session_state.active_stage = "F-1 Student"
-if "current_chips" not in st.session_state:
-    st.session_state.current_chips = random.sample(
-        STAGES["F-1 Student"]["questions"], 3
-    )
+def commit_modal_answers():
+    """Copy tmp_ values → prof_ values and close modal."""
+    st.session_state.prof_visa         = st.session_state.tmp_visa
+    st.session_state.prof_stem         = st.session_state.tmp_stem
+    st.session_state.prof_grad_month   = st.session_state.tmp_grad_month
+    st.session_state.prof_grad_day     = st.session_state.tmp_grad_day
+    st.session_state.prof_grad_year    = st.session_state.tmp_grad_year
+    st.session_state.prof_employer     = st.session_state.tmp_employer
+    st.session_state.show_modal        = False
 
-def refresh_chips(stage: str):
-    """Pick 3 new random questions for the given stage."""
-    st.session_state.current_chips = random.sample(
-        STAGES[stage]["questions"], 3
-    )
+def skip_modal():
+    st.session_state.modal_skipped = True
+    st.session_state.show_modal    = False
 
-# Sidebar
+# ── Password gate ─────────────────────────────────────────────────────────────
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if not st.session_state.authenticated:
+        st.text_input("Password", type="password", key="password")
+        if st.session_state.get("password") == "berkeley2026":
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.stop()
+
+check_password()
+
+# ── ONBOARDING MODAL ──────────────────────────────────────────────────────────
+MODAL_STEPS = [
+    {
+        "kicker":   "STEP 1 OF 4",
+        "title":    "What's your current visa status?",
+        "sub":      "This helps us give you relevant, stage-specific guidance.",
+        "key":      "tmp_visa",
+        "type":     "radio",
+        "options":  VISA_OPTIONS,
+    },
+    {
+        "kicker":   "STEP 2 OF 4",
+        "title":    "Is your degree STEM or non-STEM?",
+        "sub":      "STEM degrees are eligible for a 24-month OPT extension.",
+        "key":      "tmp_stem",
+        "type":     "radio",
+        "options":  ["STEM", "Non-STEM", "Not sure"],
+    },
+    {
+        "kicker":   "STEP 3 OF 4",
+        "title":    "When do you graduate?",
+        "sub":      "We use this to calculate your OPT and STEM OPT deadlines.",
+        "key":      "tmp_grad",
+        "type":     "date_dropdowns",
+    },
+    {
+        "kicker":   "STEP 4 OF 4",
+        "title":    "What's your employment situation?",
+        "sub":      "This shapes advice about employer-sponsored options like H-1B.",
+        "key":      "tmp_employer",
+        "type":     "radio",
+        "options":  EMPLOYER_OPTIONS,
+    },
+]
+
+if st.session_state.show_modal:
+    step    = st.session_state.modal_step
+    cfg     = MODAL_STEPS[step]
+    is_last = step == len(MODAL_STEPS) - 1
+    pct     = int(((step + 1) / len(MODAL_STEPS)) * 100)
+
+    # Clean full-page modal — no CSS overlay blocking clicks
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"] { display: none !important; }
+    .block-container { max-width: 560px !important; padding-top: 80px !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    _, modal_col, _ = st.columns([1, 4, 1])
+    with modal_col:
+        # CSS: teal radio, teal next button, clean sidebar
+        st.markdown(f"""
+        <style>
+        /* Teal radio buttons */
+        div[data-testid="stRadio"] input[type="radio"] {{ accent-color: #5DCAA5; }}
+        div[data-testid="stRadio"] label {{ color: #C2CAD4 !important; font-size: 15px !important; }}
+        div[data-testid="stRadio"] div[role="radiogroup"] {{ gap: 10px !important; padding: 4px 0 !important; }}
+
+        /* Next button teal */
+        div[data-testid="stHorizontalBlock"] .stButton:nth-child(2) > button {{
+            background: #5DCAA5 !important;
+            border: none !important;
+            color: #0D1117 !important;
+            font-weight: 700 !important;
+        }}
+        div[data-testid="stHorizontalBlock"] .stButton:nth-child(2) > button:hover {{
+            background: #4AB891 !important;
+        }}
+        div[data-testid="stHorizontalBlock"] .stButton > button {{
+            background: transparent;
+            border: 1px solid #2A3441;
+            color: #8B95A1;
+            border-radius: 8px;
+        }}
+
+        /* Date dropdowns */
+        div[data-testid="stSelectbox"] > div > div {{
+            background: #1A2330 !important;
+            border: 1px solid #2A3441 !important;
+            color: #C2CAD4 !important;
+        }}
+
+        /* Sidebar stage buttons match design */
+        div[data-testid="stSidebar"] .stButton button {{
+            background: transparent !important;
+            border: none !important;
+            color: #8B95A1 !important;
+            text-align: left !important;
+            padding: 8px 11px !important;
+            font-size: 14px !important;
+            font-weight: 400 !important;
+            width: 100% !important;
+            border-radius: 6px !important;
+        }}
+        div[data-testid="stSidebar"] .stButton button:hover {{
+            background: #222B35 !important;
+            color: #C2CAD4 !important;
+        }}
+        </style>
+
+        <div style="
+            background:#1C2333; border:1px solid #2A3441;
+            border-radius:16px; padding:32px 36px 28px 36px;
+            box-shadow:0 24px 64px rgba(0,0,0,0.4);
+            margin-bottom:20px;
+        ">
+            <div style="color:#5DCAA5; font-size:11px; font-weight:700;
+                        letter-spacing:0.12em; margin-bottom:10px;">
+                {cfg['kicker']}
+            </div>
+            <div style="color:#E2E8F0; font-size:22px; font-weight:700;
+                        margin-bottom:6px; line-height:1.3;">
+                {cfg['title']}
+            </div>
+            <div style="color:#8B95A1; font-size:13px; margin-bottom:22px;">
+                {cfg['sub']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Input widget renders right after the card header (visually inside it)
+        if cfg["type"] == "radio":
+            current = st.session_state.get(cfg["key"])
+            idx = cfg["options"].index(current) if current in cfg["options"] else 0
+            st.session_state[cfg["key"]] = st.radio(
+                cfg["title"],
+                cfg["options"],
+                index=idx,
+                key=f"modal_radio_{step}",
+                label_visibility="collapsed",
+            )
+
+        elif cfg["type"] == "date_dropdowns":
+            # Row 1: Month (full width)
+            m_idx = MONTHS.index(st.session_state.tmp_grad_month) if st.session_state.tmp_grad_month in MONTHS else 0
+            st.session_state.tmp_grad_month = st.selectbox("Month", MONTHS, index=m_idx, key="modal_month")
+            # Row 2: Day + Year side by side
+            d_col, y_col = st.columns([1, 1])
+            with d_col:
+                d_idx = DAYS.index(st.session_state.tmp_grad_day) if st.session_state.tmp_grad_day in DAYS else 0
+                st.session_state.tmp_grad_day = st.selectbox("Day", DAYS, index=d_idx, key="modal_day")
+            with y_col:
+                cur_yr = str(datetime.now().year + 1)
+                y_idx = YEARS.index(cur_yr) if cur_yr in YEARS else 0
+                if st.session_state.tmp_grad_year in YEARS:
+                    y_idx = YEARS.index(st.session_state.tmp_grad_year)
+                st.session_state.tmp_grad_year = st.selectbox("Year", YEARS, index=y_idx, key="modal_year")
+
+        # Progress bar below options
+        st.markdown(f"""
+        <div style="height:4px; background:#2A3441; border-radius:2px; margin:20px 0 24px 0;">
+            <div style="height:4px; background:#5DCAA5; border-radius:2px; width:{pct}%;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Button row 1: Back + Next
+        b1, b2 = st.columns([1, 2])
+        with b1:
+            if step > 0:
+                if st.button("← Back", use_container_width=True, key="modal_back"):
+                    st.session_state.modal_step -= 1
+                    st.rerun()
+        with b2:
+            label = "Finish ✓" if is_last else "Next →"
+            if st.button(label, use_container_width=True, key="modal_next"):
+                if is_last:
+                    commit_modal_answers()
+                else:
+                    st.session_state.modal_step += 1
+                st.rerun()
+
+        # Button row 2: Skip (small text, wider button, centered)
+        st.markdown("""
+        <style>
+        div[data-testid="stColumn"]:has(button[kind="secondary"]#modal_skip) button {
+            font-size: 10px !important;
+        }
+        /* Target all secondary buttons in skip row by position */
+        .skip-btn button {
+            font-size: 8px !important;
+            color: #5B6B82 !important;
+            background: transparent !important;
+            border: 1px solid #2A3441 !important;
+            padding: 4px 12px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        _, sc, _ = st.columns([1, 2, 1])
+        with sc:
+            if st.button("Skip", use_container_width=True, key="modal_skip"):
+                skip_modal()
+                st.rerun()
+        st.markdown("""
+        <style>
+        /* Make skip button text smaller */
+        div[data-testid="stHorizontalBlock"]:last-of-type .stButton button {
+            font-size: 8px !important;
+            color: #5B6B82 !important;
+            padding: 6px 0 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+    st.stop()
+
+# ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown('<div class="nav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
-    st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
 
+    # ── Profile section ──
+    st.markdown('<div class="nav-label">YOUR PROFILE</div>', unsafe_allow_html=True)
+
+    # Visa status
+    visa_opts_full = ["— not set —"] + VISA_OPTIONS
+    visa_idx = visa_opts_full.index(st.session_state.prof_visa) if st.session_state.prof_visa in visa_opts_full else 0
+    selected_visa = st.selectbox("Visa status", visa_opts_full, index=visa_idx, key="sidebar_visa")
+    st.session_state.prof_visa = None if selected_visa == "— not set —" else selected_visa
+
+    # Degree field
+    stem_opts_full = ["— not set —", "STEM", "Non-STEM", "Not sure"]
+    stem_idx = stem_opts_full.index(st.session_state.prof_stem) if st.session_state.prof_stem in stem_opts_full else 0
+    selected_stem = st.selectbox("Degree type", stem_opts_full, index=stem_idx, key="sidebar_stem")
+    st.session_state.prof_stem = None if selected_stem == "— not set —" else selected_stem
+
+    # Graduation date — two rows to avoid cramped layout
+    st.caption("Graduation date")
+    gc1, gc2 = st.columns(2)
+    with gc1:
+        m_opts = ["Month"] + MONTHS
+        m_idx  = m_opts.index(st.session_state.prof_grad_month) if st.session_state.prof_grad_month in m_opts else 0
+        sel_m  = st.selectbox("Month", m_opts, index=m_idx, key="sb_month", label_visibility="collapsed")
+        st.session_state.prof_grad_month = None if sel_m == "Month" else sel_m
+    with gc2:
+        d_opts = ["Day"] + DAYS
+        d_idx  = d_opts.index(st.session_state.prof_grad_day) if st.session_state.prof_grad_day in d_opts else 0
+        sel_d  = st.selectbox("Day", d_opts, index=d_idx, key="sb_day", label_visibility="collapsed")
+        st.session_state.prof_grad_day = None if sel_d == "Day" else sel_d
+    y_opts = ["Year"] + YEARS
+    y_idx  = y_opts.index(st.session_state.prof_grad_year) if st.session_state.prof_grad_year in y_opts else 0
+    sel_y  = st.selectbox("Year", y_opts, index=y_idx, key="sb_year", label_visibility="collapsed")
+    st.session_state.prof_grad_year = None if sel_y == "Year" else sel_y
+
+    # Employer type
+    emp_opts_full = ["— not set —"] + EMPLOYER_OPTIONS
+    emp_idx = emp_opts_full.index(st.session_state.prof_employer) if st.session_state.prof_employer in emp_opts_full else 0
+    selected_emp = st.selectbox("Employment type", emp_opts_full, index=emp_idx, key="sidebar_emp")
+    st.session_state.prof_employer = None if selected_emp == "— not set —" else selected_emp
+
+    # Re-open questionnaire button
+    if st.button("↺ Redo questionnaire", key="reopen_modal"):
+        st.session_state.show_modal  = True
+        st.session_state.modal_step  = 0
+        st.session_state.modal_skipped = False
+        # Reset tmp fields
+        for k in ["tmp_visa","tmp_stem","tmp_grad_month","tmp_grad_day","tmp_grad_year","tmp_employer"]:
+            st.session_state[k] = None
+        st.rerun()
+
+    st.divider()
+
+    # ── Stage nav ──
+    st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
     for stage, info in STAGES.items():
         is_active = st.session_state.active_stage == stage
-        icon = info['icon']
+        icon = info["icon"]
         if is_active:
             st.markdown(
                 f'<div class="stage-active">'
-                f'<span class="stage-icon-active">{icon}</span>{stage}'
+                f'<span style="color:{TEAL}; font-size:10px">{icon}</span>{stage}'
                 f'</div>',
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
         else:
-            if st.button(f"{icon}  {stage}", key=f"stage_{stage}"):
+            if st.button(f"{icon} {stage}", key=f"stage_{stage}"):
                 st.session_state.active_stage = stage
                 refresh_chips(stage)
                 st.rerun()
 
+    # ── Recent chats ──
     st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
     if st.session_state.messages:
         user_msgs = [m["content"] for m in st.session_state.messages if m["role"] == "user"]
@@ -309,17 +669,32 @@ with st.sidebar:
     else:
         st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
 
-# Main area: chat (center) + sources (right)
+# ── MAIN AREA ─────────────────────────────────────────────────────────────────
 chat_col, source_col = st.columns([3, 1], gap="medium")
 
 with chat_col:
     active = st.session_state.active_stage
-    icon = STAGES[active]["icon"]
-    st.markdown(
-        f"<h4 style='color:{TEAL};'>{icon} {active}</h4>",
-        unsafe_allow_html=True,
-    )
+    icon   = STAGES[active]["icon"]
+    st.markdown(f"<h4 style='color:{TEAL};'>{icon} {active}</h4>", unsafe_allow_html=True)
 
+    # Profile summary banner (show if at least one field is set)
+    profile = build_profile()
+    filled  = [v for v in profile.values() if v]
+    if filled:
+        parts = []
+        if profile["visa_status"]:    parts.append(profile["visa_status"])
+        if profile["degree_field"]:   parts.append(profile["degree_field"])
+        if profile["graduation_date"]:parts.append(f"graduating {profile['graduation_date']}")
+        if profile["employer_type"]:  parts.append(profile["employer_type"])
+        summary = " · ".join(parts)
+        st.markdown(
+            f'<div class="welcome-banner" style="color:#9FE1CB; font-size:12px;">'
+            f'<span style="color:{TEAL}; font-weight:600;">Your profile</span> &nbsp;{summary}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    # Chat history
     for msg in st.session_state.messages:
         cls = "user-bubble" if msg["role"] == "user" else "bot-bubble"
         st.markdown(
@@ -330,7 +705,7 @@ with chat_col:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Suggested chips row with shuffle button
+    # Suggested question chips
     chip_label_col, shuffle_col = st.columns([5, 1])
     with chip_label_col:
         st.caption(f"Suggested questions for {active}:")
@@ -340,28 +715,30 @@ with chat_col:
             st.rerun()
 
     chips = st.session_state.current_chips
-    cols = st.columns(len(chips))
+    cols  = st.columns(len(chips))
     clicked = None
     for col, chip in zip(cols, chips):
         if col.button(chip, use_container_width=True, key=f"chip_{chip}"):
             clicked = chip
+
     if clicked:
         st.session_state._pending = clicked
         st.rerun()
 
-prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
+    # Chat input
+    prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
 
-if "_pending" in st.session_state:
-    prompt = st.session_state.pop("_pending")
+    if "_pending" in st.session_state:
+        prompt = st.session_state.pop("_pending")
 
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    answer, sources = get_rag_response(prompt)
-    st.session_state.messages.append({"role": "assistant", "content": answer})
-    st.session_state.sources = sources
-    st.rerun()
+    if prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        answer, sources = get_rag_response(prompt, build_profile())
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.session_state.sources = sources
+        st.rerun()
 
-# Sources panel — collapsible expander
+# ── Sources panel ─────────────────────────────────────────────────────────────
 with source_col:
     with st.expander("SOURCES", expanded=True):
         if st.session_state.sources:
