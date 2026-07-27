@@ -171,23 +171,33 @@ div[data-testid="stSidebar"] .stButton button:hover {{
     padding: 18px 20px; margin-bottom: 20px;
 }}
 
-/* ── Sticky footer: main container becomes a full-height flex column,
-   so the footer (margin-top:auto) sticks to the bottom of the viewport
-   when content is short, and flows below content once it overflows.
-   .block-container is used unscoped (no parent selector) since Streamlit
-   renames its wrapping data-testid attributes across versions, but the
-   "block-container" class itself has stayed stable. !important guards
-   against Streamlit's own inline/computed styles taking precedence. ── */
-.block-container {{
+/* ── Sticky footer, matched to the actual rendered DOM (stMain > 
+   stMainBlockContainer > stVerticalBlock). Percentage heights cascade
+   through this chain and recompute on every resize, so this holds at
+   any window size without hardcoding pixels or using 100vh (which
+   would overshoot past the header). margin-top:auto sits on the real
+   flex item -- Streamlit's own last stElementContainer -- not on our
+   nested .app-footer div, since auto-margins only work on the direct
+   flex child itself. ── */
+div[data-testid="stMainBlockContainer"] {{
     display: flex !important;
     flex-direction: column !important;
-    min-height: 100vh !important;
+    min-height: 100% !important;
+}}
+div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] {{
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 100% !important;
+}}
+div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > div.stElementContainer:last-child {{
+    margin-top: auto !important;
 }}
 
 /* ── Footer ── */
 .app-footer {{
     border-top: 1px solid #2A3441;
-    margin-top: auto; padding: 28px 4px 8px 4px;
+    padding: 28px 4px 8px 4px;
 }}
 .footer-title {{
     color: #C2CAD4; font-size: 15px; font-weight: 600;
@@ -827,7 +837,7 @@ st.markdown(
         </div>
         <div style="flex:1; min-width:200px;">
           <div class="footer-label">TEAM</div>
-          <div class="footer-item">Rohan · Duc · Alejandra · Clover</div>
+          <div class="footer-item">Rohan Kapur · Duc · Alejandra · Clover</div>
         </div>
       </div>
     </div>
