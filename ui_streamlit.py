@@ -171,10 +171,20 @@ div[data-testid="stSidebar"] .stButton button:hover {{
     padding: 18px 20px; margin-bottom: 20px;
 }}
 
+/* ── Sticky footer: main container becomes a full-height flex column,
+   so the footer (margin-top:auto) sticks to the bottom of the viewport
+   when content is short, and flows below content once it overflows ── */
+section[data-testid="stMain"] > div.block-container,
+.main .block-container {{
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}}
+
 /* ── Footer ── */
 .app-footer {{
     border-top: 1px solid #2A3441;
-    margin-top: 40px; padding: 28px 4px 8px 4px;
+    margin-top: auto; padding: 28px 4px 8px 4px;
 }}
 .footer-title {{
     color: #C2CAD4; font-size: 15px; font-weight: 600;
