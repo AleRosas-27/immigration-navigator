@@ -173,12 +173,15 @@ div[data-testid="stSidebar"] .stButton button:hover {{
 
 /* ── Sticky footer: main container becomes a full-height flex column,
    so the footer (margin-top:auto) sticks to the bottom of the viewport
-   when content is short, and flows below content once it overflows ── */
-section[data-testid="stMain"] > div.block-container,
-.main .block-container {{
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+   when content is short, and flows below content once it overflows.
+   .block-container is used unscoped (no parent selector) since Streamlit
+   renames its wrapping data-testid attributes across versions, but the
+   "block-container" class itself has stayed stable. !important guards
+   against Streamlit's own inline/computed styles taking precedence. ── */
+.block-container {{
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
 }}
 
 /* ── Footer ── */
