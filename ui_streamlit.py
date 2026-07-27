@@ -170,6 +170,33 @@ div[data-testid="stSidebar"] .stButton button:hover {{
     border: 1px solid {TEAL}33; border-radius: 12px;
     padding: 18px 20px; margin-bottom: 20px;
 }}
+
+/* ── Footer ── */
+.app-footer {{
+    border-top: 1px solid #2A3441;
+    margin-top: 40px; padding: 28px 4px 8px 4px;
+}}
+.footer-title {{
+    color: #C2CAD4; font-size: 15px; font-weight: 600;
+    margin-bottom: 10px;
+}}
+.footer-about {{
+    color: {TEXT_MUTED}; font-size: 12.5px; line-height: 1.6;
+    max-width: 340px;
+}}
+.footer-label {{
+    color: {TEXT_LABEL}; font-size: 10px; letter-spacing: 0.08em;
+    margin-bottom: 10px;
+}}
+.footer-item {{
+    color: {TEXT_MUTED}; font-size: 12.5px; line-height: 1.9;
+}}
+.footer-feedback {{
+    color: {TEXT_LABEL}; font-size: 12px; margin-top: 16px;
+    display: inline-flex; align-items: center; gap: 6px;
+}}
+.footer-feedback a {{ color: {TEXT_LABEL}; text-decoration: none; }}
+.footer-feedback a:hover {{ color: {TEAL}; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -761,3 +788,36 @@ with source_col:
                 f"grounded in USCIS regulations, SEVP guidance, and the CFR.</div>",
                 unsafe_allow_html=True,
             )
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div class="app-footer">
+      <div style="display:flex; flex-wrap:wrap; gap:64px;">
+        <div style="flex:2; min-width:260px;">
+          <div class="footer-title">UC Berkeley MIDS Capstone — Summer 2026</div>
+          <div class="footer-about">
+            A RAG-powered assistant helping international students navigate the
+            F-1 → OPT → STEM OPT → H-1B visa pipeline. A research preview; not
+            affiliated with USCIS or SEVP.
+          </div>
+          <div class="footer-feedback">
+            <span>✎</span>
+            <a href="mailto:immigration-navigator@berkeley.edu">Give feedback</a>
+          </div>
+        </div>
+        <div style="flex:1; min-width:160px;">
+          <div class="footer-label">SOURCES</div>
+          <div class="footer-item">USCIS Policy Manual</div>
+          <div class="footer-item">SEVP Guidance</div>
+          <div class="footer-item">8 CFR Regulations</div>
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <div class="footer-label">TEAM</div>
+          <div class="footer-item">Rohan · Duc · Alejandra · Clover</div>
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
