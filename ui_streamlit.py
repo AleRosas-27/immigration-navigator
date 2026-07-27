@@ -199,6 +199,53 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
     border-top: 1px solid #2A3441;
     padding: 28px 4px 8px 4px;
 }}
+
+/* ── Top nav bar ── */
+.topnav-brand {{
+    color: {TEAL}; font-size: 15px; font-weight: 600;
+    letter-spacing: 0.02em; display: flex; align-items: center;
+    gap: 8px; height: 38px;
+}}
+/* Fixed, full-width, sits above the sidebar and main content since
+   Streamlit renders those as side-by-side siblings with no shared
+   top region -- fixed positioning is the only way to span both. */
+.st-key-topnav_row {{
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background: {PAGE_BG};
+    border-bottom: 1px solid #2A3441;
+    padding: 14px 40px !important;
+    margin: 0 !important;
+    display: flex; align-items: center;
+}}
+/* Keep Streamlit's own collapse-sidebar / menu icons clickable above our bar */
+header[data-testid="stHeader"] {{ z-index: 1001 !important; }}
+/* Push sidebar and main content down so the fixed bar doesn't cover them */
+section[data-testid="stSidebar"] {{ padding-top: 64px !important; }}
+div[data-testid="stMainBlockContainer"] {{ padding-top: 80px !important; }}
+
+.st-key-topnav_row .stButton button {{
+    background: transparent !important;
+    border: none !important;
+    color: {TEXT_MUTED} !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    width: 100% !important;
+    transition: background 0.15s ease, color 0.15s ease;
+}}
+.st-key-topnav_row .stButton button:hover {{
+    background: {BUBBLE_BOT} !important;
+    color: #C2CAD4 !important;
+}}
+.topnav-item-active {{
+    background: {TEAL}; color: #0D1117;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 20px;
+    text-align: center; width: 100%; box-sizing: border-box;
+}}
 .footer-title {{
     color: #C2CAD4; font-size: 15px; font-weight: 600;
     margin-bottom: 10px;
@@ -242,6 +289,8 @@ EMPLOYER_OPTIONS = [
     "Self-employed",
     "Not yet employed",
 ]
+
+NAV_ITEMS = ["Chat", "How This Works", "Sources", "Team"]
 
 MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 DAYS   = [str(d) for d in range(1, 32)]
@@ -314,6 +363,7 @@ defaults = {
     "messages":       [],
     "sources":        [],
     "active_stage":   "F-1 Student",
+    "active_nav":     "Chat",
     "current_chips":  random.sample(STAGES["F-1 Student"]["questions"], 3),
     # Onboarding
     "show_modal":     True,
@@ -719,6 +769,22 @@ with st.sidebar:
     else:
         st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
 
+# ── TOP NAV ───────────────────────────────────────────────────────────────────
+with st.container(key="topnav_row"):
+    brand_col, items_col = st.columns([2, 3])
+    with brand_col:
+        st.markdown('<div class="topnav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
+    with items_col:
+        nav_cols = st.columns(len(NAV_ITEMS))
+        for col, item in zip(nav_cols, NAV_ITEMS):
+            with col:
+                if item == st.session_state.active_nav:
+                    st.markdown(f'<div class="topnav-item-active">{item}</div>', unsafe_allow_html=True)
+                else:
+                    if st.button(item, key=f"topnav_{item}", use_container_width=True):
+                        st.session_state.active_nav = item
+                        st.rerun()
+
 # ── MAIN AREA ─────────────────────────────────────────────────────────────────
 chat_col, source_col = st.columns([3, 1], gap="medium")
 
@@ -837,7 +903,7 @@ st.markdown(
         </div>
         <div style="flex:1; min-width:200px;">
           <div class="footer-label">TEAM</div>
-          <div class="footer-item">Rohan Kapur · Duc · Alejandra · Clover</div>
+          <div class="footer-item">Rohan · Duc · Alejandra · Clover</div>
         </div>
       </div>
     </div>
