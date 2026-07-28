@@ -201,19 +201,22 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 }}
 
 /* ── Top nav bar ── */
-/* Neutralize transform/filter/will-change on the ancestor chain --
-   any of these on an ancestor silently breaks position:fixed by
-   creating a new containing block, making "fixed" track that
-   ancestor instead of the real browser viewport. */
-.stApp,
+/* Neutralize transform/filter/will-change/contain across the ENTIRE
+   app tree -- any one of these on any ancestor (including untagged
+   wrapper divs Streamlit uses to animate the sidebar open/closed)
+   silently breaks position:fixed by creating a new containing block,
+   making "fixed" track that ancestor instead of the real viewport.
+   Streamlit very likely animates the sidebar via a transform on a
+   wrapper that sits between .stApp and our nav bar -- even
+   translateX(0) triggers this, whether or not it visually moves
+   anything. Blunt-force across the whole tree rules this out for good. */
 [data-testid="stAppViewContainer"],
-[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] {{
+[data-testid="stAppViewContainer"] * {{
     transform: none !important;
     filter: none !important;
     perspective: none !important;
     will-change: auto !important;
+    contain: none !important;
 }}
 .topnav-brand {{
     color: {TEAL}; font-size: 15px; font-weight: 600;
