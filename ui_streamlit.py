@@ -36,7 +36,7 @@ TEXT_LABEL = "#6B7682"
 st.markdown(f"""
 <style>
 /* ── Base ── */
-.stApp {{ background-color: {PAGE_BG}; }}
+.stApp {{ background-color: {PAGE_BG}; font-size: 14px; }}
 section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
 section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
 
@@ -75,15 +75,15 @@ div[data-testid="stSidebar"] .stButton button:hover {{
 /* ── Chat bubbles ── */
 .user-bubble {{
     background: {TEAL_DARK}; color: #CFEEE2;
-    padding: 10px 14px; border-radius: 12px 12px 2px 12px;
-    display: inline-block; max-width: 80%; float: right;
-    clear: both; line-height: 1.5;
+    padding: 8px 12px; border-radius: 10px 10px 2px 10px;
+    display: inline-block; max-width: 72%; float: right;
+    clear: both; line-height: 1.45; font-size: 13.5px;
 }}
 .bot-bubble {{
     background: {BUBBLE_BOT}; color: #C2CAD4;
-    padding: 10px 14px; border-radius: 12px 12px 12px 2px;
-    display: inline-block; max-width: 80%; float: left;
-    clear: both; line-height: 1.6;
+    padding: 8px 12px; border-radius: 10px 10px 10px 2px;
+    display: inline-block; max-width: 72%; float: left;
+    clear: both; line-height: 1.5; font-size: 13.5px;
 }}
 .cite {{ color: {TEAL}; font-weight: 600; }}
 
@@ -212,15 +212,13 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 .st-key-topnav_row {{
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    z-index: 1000;
+    z-index: 9999;
     background: {PAGE_BG};
     border-bottom: 1px solid #2A3441;
     padding: 14px 40px !important;
     margin: 0 !important;
     display: flex; align-items: center;
 }}
-/* Keep Streamlit's own collapse-sidebar / menu icons clickable above our bar */
-header[data-testid="stHeader"] {{ z-index: 1001 !important; }}
 /* Push sidebar and main content down so the fixed bar doesn't cover them */
 section[data-testid="stSidebar"] {{ padding-top: 64px !important; }}
 div[data-testid="stMainBlockContainer"] {{ padding-top: 80px !important; }}
