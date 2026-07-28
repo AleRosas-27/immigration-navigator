@@ -36,7 +36,7 @@ TEXT_LABEL = "#6B7682"
 st.markdown(f"""
 <style>
 /* ── Base ── */
-.stApp {{ background-color: {PAGE_BG}; }}
+.stApp {{ background-color: {PAGE_BG}; font-size: 14px; }}
 section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
 section[data-testid="stSidebar"] * {{ color: {TEXT_MUTED}; }}
 
@@ -75,15 +75,15 @@ div[data-testid="stSidebar"] .stButton button:hover {{
 /* ── Chat bubbles ── */
 .user-bubble {{
     background: {TEAL_DARK}; color: #CFEEE2;
-    padding: 10px 14px; border-radius: 12px 12px 2px 12px;
-    display: inline-block; max-width: 80%; float: right;
-    clear: both; line-height: 1.5;
+    padding: 8px 12px; border-radius: 10px 10px 2px 10px;
+    display: inline-block; max-width: 72%; float: right;
+    clear: both; line-height: 1.45; font-size: 13.5px;
 }}
 .bot-bubble {{
     background: {BUBBLE_BOT}; color: #C2CAD4;
-    padding: 10px 14px; border-radius: 12px 12px 12px 2px;
-    display: inline-block; max-width: 80%; float: left;
-    clear: both; line-height: 1.6;
+    padding: 8px 12px; border-radius: 10px 10px 10px 2px;
+    display: inline-block; max-width: 72%; float: left;
+    clear: both; line-height: 1.5; font-size: 13.5px;
 }}
 .cite {{ color: {TEAL}; font-weight: 600; }}
 
@@ -170,6 +170,88 @@ div[data-testid="stSidebar"] .stButton button:hover {{
     border: 1px solid {TEAL}33; border-radius: 12px;
     padding: 18px 20px; margin-bottom: 20px;
 }}
+
+/* ── Sticky footer, matched to the actual rendered DOM (stMain > 
+   stMainBlockContainer > stVerticalBlock). Percentage heights cascade
+   through this chain and recompute on every resize, so this holds at
+   any window size without hardcoding pixels or using 100vh (which
+   would overshoot past the header). margin-top:auto sits on the real
+   flex item -- Streamlit's own last stElementContainer -- not on our
+   nested .app-footer div, since auto-margins only work on the direct
+   flex child itself. ── */
+div[data-testid="stMainBlockContainer"] {{
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100% !important;
+}}
+div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] {{
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 100% !important;
+}}
+div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > div.stElementContainer:last-child {{
+    margin-top: auto !important;
+}}
+
+/* ── Footer ── */
+.app-footer {{
+    border-top: 1px solid #2A3441;
+    padding: 28px 4px 8px 4px;
+}}
+
+/* ── Top nav bar ── */
+.topnav-brand {{
+    color: {TEAL}; font-size: 15px; font-weight: 600;
+    letter-spacing: 0.02em; display: flex; align-items: center;
+    gap: 8px; height: 38px;
+}}
+.st-key-topnav_row {{
+    border-bottom: 1px solid #2A3441;
+    padding-bottom: 14px; margin-bottom: 22px;
+}}
+.st-key-topnav_row .stButton button {{
+    background: transparent !important;
+    border: none !important;
+    color: {TEXT_MUTED} !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    width: 100% !important;
+    transition: background 0.15s ease, color 0.15s ease;
+}}
+.st-key-topnav_row .stButton button:hover {{
+    background: {BUBBLE_BOT} !important;
+    color: #C2CAD4 !important;
+}}
+.topnav-item-active {{
+    background: {TEAL}; color: #0D1117;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 20px;
+    text-align: center; width: 100%; box-sizing: border-box;
+}}
+.footer-title {{
+    color: #C2CAD4; font-size: 15px; font-weight: 600;
+    margin-bottom: 10px;
+}}
+.footer-about {{
+    color: {TEXT_MUTED}; font-size: 12.5px; line-height: 1.6;
+    max-width: 340px;
+}}
+.footer-label {{
+    color: {TEXT_LABEL}; font-size: 10px; letter-spacing: 0.08em;
+    margin-bottom: 10px;
+}}
+.footer-item {{
+    color: {TEXT_MUTED}; font-size: 12.5px; line-height: 1.9;
+}}
+.footer-feedback {{
+    color: {TEXT_LABEL}; font-size: 12px; margin-top: 16px;
+    display: inline-flex; align-items: center; gap: 6px;
+}}
+.footer-feedback a {{ color: {TEXT_LABEL}; text-decoration: none; }}
+.footer-feedback a:hover {{ color: {TEAL}; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -192,6 +274,8 @@ EMPLOYER_OPTIONS = [
     "Self-employed",
     "Not yet employed",
 ]
+
+NAV_ITEMS = ["Chat", "How This Works", "Sources", "Team"]
 
 MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 DAYS   = [str(d) for d in range(1, 32)]
@@ -264,6 +348,7 @@ defaults = {
     "messages":       [],
     "sources":        [],
     "active_stage":   "F-1 Student",
+    "active_nav":     "Chat",
     "current_chips":  random.sample(STAGES["F-1 Student"]["questions"], 3),
     # Onboarding
     "show_modal":     True,
@@ -587,87 +672,109 @@ if st.session_state.show_modal:
     st.stop()
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown('<div class="nav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
-
-    # ── Profile section ──
-    st.markdown('<div class="nav-label">YOUR PROFILE</div>', unsafe_allow_html=True)
-
-    # Visa status
-    visa_opts_full = ["— not set —"] + VISA_OPTIONS
-    visa_idx = visa_opts_full.index(st.session_state.prof_visa) if st.session_state.prof_visa in visa_opts_full else 0
-    selected_visa = st.selectbox("Visa status", visa_opts_full, index=visa_idx, key="sidebar_visa")
-    st.session_state.prof_visa = None if selected_visa == "— not set —" else selected_visa
-
-    # Degree field
-    stem_opts_full = ["— not set —", "STEM", "Non-STEM", "Not sure"]
-    stem_idx = stem_opts_full.index(st.session_state.prof_stem) if st.session_state.prof_stem in stem_opts_full else 0
-    selected_stem = st.selectbox("Degree type", stem_opts_full, index=stem_idx, key="sidebar_stem")
-    st.session_state.prof_stem = None if selected_stem == "— not set —" else selected_stem
-
-    # Graduation date — two rows to avoid cramped layout
-    st.caption("Graduation date")
-    gc1, gc2 = st.columns(2)
-    with gc1:
-        m_opts = ["Month"] + MONTHS
-        m_idx  = m_opts.index(st.session_state.prof_grad_month) if st.session_state.prof_grad_month in m_opts else 0
-        sel_m  = st.selectbox("Month", m_opts, index=m_idx, key="sb_month", label_visibility="collapsed")
-        st.session_state.prof_grad_month = None if sel_m == "Month" else sel_m
-    with gc2:
-        d_opts = ["Day"] + DAYS
-        d_idx  = d_opts.index(st.session_state.prof_grad_day) if st.session_state.prof_grad_day in d_opts else 0
-        sel_d  = st.selectbox("Day", d_opts, index=d_idx, key="sb_day", label_visibility="collapsed")
-        st.session_state.prof_grad_day = None if sel_d == "Day" else sel_d
-    y_opts = ["Year"] + YEARS
-    y_idx  = y_opts.index(st.session_state.prof_grad_year) if st.session_state.prof_grad_year in y_opts else 0
-    sel_y  = st.selectbox("Year", y_opts, index=y_idx, key="sb_year", label_visibility="collapsed")
-    st.session_state.prof_grad_year = None if sel_y == "Year" else sel_y
-
-    # Employer type
-    emp_opts_full = ["— not set —"] + EMPLOYER_OPTIONS
-    emp_idx = emp_opts_full.index(st.session_state.prof_employer) if st.session_state.prof_employer in emp_opts_full else 0
-    selected_emp = st.selectbox("Employment type", emp_opts_full, index=emp_idx, key="sidebar_emp")
-    st.session_state.prof_employer = None if selected_emp == "— not set —" else selected_emp
-
-    # Re-open questionnaire button
-    if st.button("↺ Redo questionnaire", key="reopen_modal"):
-        st.session_state.show_modal  = True
-        st.session_state.modal_step  = 0
-        st.session_state.modal_skipped = False
-        # Reset tmp fields
-        for k in ["tmp_visa","tmp_stem","tmp_grad_month","tmp_grad_day","tmp_grad_year","tmp_employer"]:
-            st.session_state[k] = None
-        st.rerun()
-
-    st.divider()
-
-    # ── Stage nav ──
-    st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
-    for stage, info in STAGES.items():
-        is_active = st.session_state.active_stage == stage
-        icon = info["icon"]
-        if is_active:
-            st.markdown(
-                f'<div class="stage-active">'
-                f'<span style="color:{TEAL}; font-size:10px">{icon}</span>{stage}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+if st.session_state.active_nav != "Chat":
+    st.markdown(
+        '<style>section[data-testid="stSidebar"] { display: none !important; }</style>',
+        unsafe_allow_html=True,
+    )
+else:
+    with st.sidebar:
+        st.markdown('<div class="nav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
+    
+        # ── Profile section ──
+        st.markdown('<div class="nav-label">YOUR PROFILE</div>', unsafe_allow_html=True)
+    
+        # Visa status
+        visa_opts_full = ["— not set —"] + VISA_OPTIONS
+        visa_idx = visa_opts_full.index(st.session_state.prof_visa) if st.session_state.prof_visa in visa_opts_full else 0
+        selected_visa = st.selectbox("Visa status", visa_opts_full, index=visa_idx, key="sidebar_visa")
+        st.session_state.prof_visa = None if selected_visa == "— not set —" else selected_visa
+    
+        # Degree field
+        stem_opts_full = ["— not set —", "STEM", "Non-STEM", "Not sure"]
+        stem_idx = stem_opts_full.index(st.session_state.prof_stem) if st.session_state.prof_stem in stem_opts_full else 0
+        selected_stem = st.selectbox("Degree type", stem_opts_full, index=stem_idx, key="sidebar_stem")
+        st.session_state.prof_stem = None if selected_stem == "— not set —" else selected_stem
+    
+        # Graduation date — two rows to avoid cramped layout
+        st.caption("Graduation date")
+        gc1, gc2 = st.columns(2)
+        with gc1:
+            m_opts = ["Month"] + MONTHS
+            m_idx  = m_opts.index(st.session_state.prof_grad_month) if st.session_state.prof_grad_month in m_opts else 0
+            sel_m  = st.selectbox("Month", m_opts, index=m_idx, key="sb_month", label_visibility="collapsed")
+            st.session_state.prof_grad_month = None if sel_m == "Month" else sel_m
+        with gc2:
+            d_opts = ["Day"] + DAYS
+            d_idx  = d_opts.index(st.session_state.prof_grad_day) if st.session_state.prof_grad_day in d_opts else 0
+            sel_d  = st.selectbox("Day", d_opts, index=d_idx, key="sb_day", label_visibility="collapsed")
+            st.session_state.prof_grad_day = None if sel_d == "Day" else sel_d
+        y_opts = ["Year"] + YEARS
+        y_idx  = y_opts.index(st.session_state.prof_grad_year) if st.session_state.prof_grad_year in y_opts else 0
+        sel_y  = st.selectbox("Year", y_opts, index=y_idx, key="sb_year", label_visibility="collapsed")
+        st.session_state.prof_grad_year = None if sel_y == "Year" else sel_y
+    
+        # Employer type
+        emp_opts_full = ["— not set —"] + EMPLOYER_OPTIONS
+        emp_idx = emp_opts_full.index(st.session_state.prof_employer) if st.session_state.prof_employer in emp_opts_full else 0
+        selected_emp = st.selectbox("Employment type", emp_opts_full, index=emp_idx, key="sidebar_emp")
+        st.session_state.prof_employer = None if selected_emp == "— not set —" else selected_emp
+    
+        # Re-open questionnaire button
+        if st.button("↺ Redo questionnaire", key="reopen_modal"):
+            st.session_state.show_modal  = True
+            st.session_state.modal_step  = 0
+            st.session_state.modal_skipped = False
+            # Reset tmp fields
+            for k in ["tmp_visa","tmp_stem","tmp_grad_month","tmp_grad_day","tmp_grad_year","tmp_employer"]:
+                st.session_state[k] = None
+            st.rerun()
+    
+        st.divider()
+    
+        # ── Stage nav ──
+        st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
+        for stage, info in STAGES.items():
+            is_active = st.session_state.active_stage == stage
+            icon = info["icon"]
+            if is_active:
+                st.markdown(
+                    f'<div class="stage-active">'
+                    f'<span style="color:{TEAL}; font-size:10px">{icon}</span>{stage}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                if st.button(f"{icon} {stage}", key=f"stage_{stage}"):
+                    st.session_state.active_stage = stage
+                    refresh_chips(stage)
+                    st.rerun()
+    
+        # ── Recent chats ──
+        st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
+        if st.session_state.messages:
+            user_msgs = [m["content"] for m in st.session_state.messages if m["role"] == "user"]
+            for msg in user_msgs[-3:]:
+                short = msg[:35] + "…" if len(msg) > 35 else msg
+                st.markdown(f'<div class="stage-item">· {short}</div>', unsafe_allow_html=True)
         else:
-            if st.button(f"{icon} {stage}", key=f"stage_{stage}"):
-                st.session_state.active_stage = stage
-                refresh_chips(stage)
-                st.rerun()
+            st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
 
-    # ── Recent chats ──
-    st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
-    if st.session_state.messages:
-        user_msgs = [m["content"] for m in st.session_state.messages if m["role"] == "user"]
-        for msg in user_msgs[-3:]:
-            short = msg[:35] + "…" if len(msg) > 35 else msg
-            st.markdown(f'<div class="stage-item">· {short}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
+# ── TOP NAV ───────────────────────────────────────────────────────────────────
+with st.container(key="topnav_row"):
+    brand_col, items_col = st.columns([2, 3])
+    with brand_col:
+        st.markdown('<div class="topnav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
+    with items_col:
+        nav_cols = st.columns(len(NAV_ITEMS))
+        for col, item in zip(nav_cols, NAV_ITEMS):
+            with col:
+                if item == st.session_state.active_nav:
+                    st.markdown(f'<div class="topnav-item-active">{item}</div>', unsafe_allow_html=True)
+                else:
+                    if st.button(item, key=f"topnav_{item}", use_container_width=True):
+                        st.session_state.active_nav = item
+                        st.rerun()
 
 # ── MAIN AREA ─────────────────────────────────────────────────────────────────
 chat_col, source_col = st.columns([3, 1], gap="medium")
@@ -761,3 +868,36 @@ with source_col:
                 f"grounded in USCIS regulations, SEVP guidance, and the CFR.</div>",
                 unsafe_allow_html=True,
             )
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div class="app-footer">
+      <div style="display:flex; flex-wrap:wrap; gap:64px;">
+        <div style="flex:2; min-width:260px;">
+          <div class="footer-title">UC Berkeley MIDS Capstone — Summer 2026</div>
+          <div class="footer-about">
+            A RAG-powered assistant helping international students navigate the
+            F-1 → OPT → STEM OPT → H-1B visa pipeline. A research preview; not
+            affiliated with USCIS or SEVP.
+          </div>
+          <div class="footer-feedback">
+            <span>✎</span>
+            <a href="mailto:immigration-navigator@berkeley.edu">Give feedback</a>
+          </div>
+        </div>
+        <div style="flex:1; min-width:160px;">
+          <div class="footer-label">SOURCES</div>
+          <div class="footer-item">USCIS Policy Manual</div>
+          <div class="footer-item">SEVP Guidance</div>
+          <div class="footer-item">8 CFR Regulations</div>
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <div class="footer-label">TEAM</div>
+          <div class="footer-item">Rohan · Duc · Alejandra · Clover</div>
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
