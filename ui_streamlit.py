@@ -201,45 +201,15 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 }}
 
 /* ── Top nav bar ── */
-/* Neutralize transform/filter/will-change/contain across the ENTIRE
-   app tree -- any one of these on any ancestor (including untagged
-   wrapper divs Streamlit uses to animate the sidebar open/closed)
-   silently breaks position:fixed by creating a new containing block,
-   making "fixed" track that ancestor instead of the real viewport.
-   Streamlit very likely animates the sidebar via a transform on a
-   wrapper that sits between .stApp and our nav bar -- even
-   translateX(0) triggers this, whether or not it visually moves
-   anything. Blunt-force across the whole tree rules this out for good. */
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] * {{
-    transform: none !important;
-    filter: none !important;
-    perspective: none !important;
-    will-change: auto !important;
-    contain: none !important;
-}}
 .topnav-brand {{
     color: {TEAL}; font-size: 15px; font-weight: 600;
     letter-spacing: 0.02em; display: flex; align-items: center;
     gap: 8px; height: 38px;
 }}
-/* Fixed, full-width, sits above the sidebar and main content since
-   Streamlit renders those as side-by-side siblings with no shared
-   top region -- fixed positioning is the only way to span both. */
 .st-key-topnav_row {{
-    position: fixed !important;
-    top: 0; left: 0; right: 0;
-    z-index: 9999;
-    background: {PAGE_BG};
     border-bottom: 1px solid #2A3441;
-    padding: 14px 40px !important;
-    margin: 0 !important;
-    display: flex; align-items: center;
+    padding-bottom: 14px; margin-bottom: 22px;
 }}
-/* Push sidebar and main content down so the fixed bar doesn't cover them */
-section[data-testid="stSidebar"] {{ padding-top: 64px !important; }}
-div[data-testid="stMainBlockContainer"] {{ padding-top: 80px !important; }}
-
 .st-key-topnav_row .stButton button {{
     background: transparent !important;
     border: none !important;
@@ -702,87 +672,93 @@ if st.session_state.show_modal:
     st.stop()
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown('<div class="nav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
-
-    # ── Profile section ──
-    st.markdown('<div class="nav-label">YOUR PROFILE</div>', unsafe_allow_html=True)
-
-    # Visa status
-    visa_opts_full = ["— not set —"] + VISA_OPTIONS
-    visa_idx = visa_opts_full.index(st.session_state.prof_visa) if st.session_state.prof_visa in visa_opts_full else 0
-    selected_visa = st.selectbox("Visa status", visa_opts_full, index=visa_idx, key="sidebar_visa")
-    st.session_state.prof_visa = None if selected_visa == "— not set —" else selected_visa
-
-    # Degree field
-    stem_opts_full = ["— not set —", "STEM", "Non-STEM", "Not sure"]
-    stem_idx = stem_opts_full.index(st.session_state.prof_stem) if st.session_state.prof_stem in stem_opts_full else 0
-    selected_stem = st.selectbox("Degree type", stem_opts_full, index=stem_idx, key="sidebar_stem")
-    st.session_state.prof_stem = None if selected_stem == "— not set —" else selected_stem
-
-    # Graduation date — two rows to avoid cramped layout
-    st.caption("Graduation date")
-    gc1, gc2 = st.columns(2)
-    with gc1:
-        m_opts = ["Month"] + MONTHS
-        m_idx  = m_opts.index(st.session_state.prof_grad_month) if st.session_state.prof_grad_month in m_opts else 0
-        sel_m  = st.selectbox("Month", m_opts, index=m_idx, key="sb_month", label_visibility="collapsed")
-        st.session_state.prof_grad_month = None if sel_m == "Month" else sel_m
-    with gc2:
-        d_opts = ["Day"] + DAYS
-        d_idx  = d_opts.index(st.session_state.prof_grad_day) if st.session_state.prof_grad_day in d_opts else 0
-        sel_d  = st.selectbox("Day", d_opts, index=d_idx, key="sb_day", label_visibility="collapsed")
-        st.session_state.prof_grad_day = None if sel_d == "Day" else sel_d
-    y_opts = ["Year"] + YEARS
-    y_idx  = y_opts.index(st.session_state.prof_grad_year) if st.session_state.prof_grad_year in y_opts else 0
-    sel_y  = st.selectbox("Year", y_opts, index=y_idx, key="sb_year", label_visibility="collapsed")
-    st.session_state.prof_grad_year = None if sel_y == "Year" else sel_y
-
-    # Employer type
-    emp_opts_full = ["— not set —"] + EMPLOYER_OPTIONS
-    emp_idx = emp_opts_full.index(st.session_state.prof_employer) if st.session_state.prof_employer in emp_opts_full else 0
-    selected_emp = st.selectbox("Employment type", emp_opts_full, index=emp_idx, key="sidebar_emp")
-    st.session_state.prof_employer = None if selected_emp == "— not set —" else selected_emp
-
-    # Re-open questionnaire button
-    if st.button("↺ Redo questionnaire", key="reopen_modal"):
-        st.session_state.show_modal  = True
-        st.session_state.modal_step  = 0
-        st.session_state.modal_skipped = False
-        # Reset tmp fields
-        for k in ["tmp_visa","tmp_stem","tmp_grad_month","tmp_grad_day","tmp_grad_year","tmp_employer"]:
-            st.session_state[k] = None
-        st.rerun()
-
-    st.divider()
-
-    # ── Stage nav ──
-    st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
-    for stage, info in STAGES.items():
-        is_active = st.session_state.active_stage == stage
-        icon = info["icon"]
-        if is_active:
-            st.markdown(
-                f'<div class="stage-active">'
-                f'<span style="color:{TEAL}; font-size:10px">{icon}</span>{stage}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+if st.session_state.active_nav != "Chat":
+    st.markdown(
+        '<style>section[data-testid="stSidebar"] { display: none !important; }</style>',
+        unsafe_allow_html=True,
+    )
+else:
+    with st.sidebar:
+        st.markdown('<div class="nav-brand">✦ Immigration Navigator</div>', unsafe_allow_html=True)
+    
+        # ── Profile section ──
+        st.markdown('<div class="nav-label">YOUR PROFILE</div>', unsafe_allow_html=True)
+    
+        # Visa status
+        visa_opts_full = ["— not set —"] + VISA_OPTIONS
+        visa_idx = visa_opts_full.index(st.session_state.prof_visa) if st.session_state.prof_visa in visa_opts_full else 0
+        selected_visa = st.selectbox("Visa status", visa_opts_full, index=visa_idx, key="sidebar_visa")
+        st.session_state.prof_visa = None if selected_visa == "— not set —" else selected_visa
+    
+        # Degree field
+        stem_opts_full = ["— not set —", "STEM", "Non-STEM", "Not sure"]
+        stem_idx = stem_opts_full.index(st.session_state.prof_stem) if st.session_state.prof_stem in stem_opts_full else 0
+        selected_stem = st.selectbox("Degree type", stem_opts_full, index=stem_idx, key="sidebar_stem")
+        st.session_state.prof_stem = None if selected_stem == "— not set —" else selected_stem
+    
+        # Graduation date — two rows to avoid cramped layout
+        st.caption("Graduation date")
+        gc1, gc2 = st.columns(2)
+        with gc1:
+            m_opts = ["Month"] + MONTHS
+            m_idx  = m_opts.index(st.session_state.prof_grad_month) if st.session_state.prof_grad_month in m_opts else 0
+            sel_m  = st.selectbox("Month", m_opts, index=m_idx, key="sb_month", label_visibility="collapsed")
+            st.session_state.prof_grad_month = None if sel_m == "Month" else sel_m
+        with gc2:
+            d_opts = ["Day"] + DAYS
+            d_idx  = d_opts.index(st.session_state.prof_grad_day) if st.session_state.prof_grad_day in d_opts else 0
+            sel_d  = st.selectbox("Day", d_opts, index=d_idx, key="sb_day", label_visibility="collapsed")
+            st.session_state.prof_grad_day = None if sel_d == "Day" else sel_d
+        y_opts = ["Year"] + YEARS
+        y_idx  = y_opts.index(st.session_state.prof_grad_year) if st.session_state.prof_grad_year in y_opts else 0
+        sel_y  = st.selectbox("Year", y_opts, index=y_idx, key="sb_year", label_visibility="collapsed")
+        st.session_state.prof_grad_year = None if sel_y == "Year" else sel_y
+    
+        # Employer type
+        emp_opts_full = ["— not set —"] + EMPLOYER_OPTIONS
+        emp_idx = emp_opts_full.index(st.session_state.prof_employer) if st.session_state.prof_employer in emp_opts_full else 0
+        selected_emp = st.selectbox("Employment type", emp_opts_full, index=emp_idx, key="sidebar_emp")
+        st.session_state.prof_employer = None if selected_emp == "— not set —" else selected_emp
+    
+        # Re-open questionnaire button
+        if st.button("↺ Redo questionnaire", key="reopen_modal"):
+            st.session_state.show_modal  = True
+            st.session_state.modal_step  = 0
+            st.session_state.modal_skipped = False
+            # Reset tmp fields
+            for k in ["tmp_visa","tmp_stem","tmp_grad_month","tmp_grad_day","tmp_grad_year","tmp_employer"]:
+                st.session_state[k] = None
+            st.rerun()
+    
+        st.divider()
+    
+        # ── Stage nav ──
+        st.markdown('<div class="nav-label">YOUR STAGE</div>', unsafe_allow_html=True)
+        for stage, info in STAGES.items():
+            is_active = st.session_state.active_stage == stage
+            icon = info["icon"]
+            if is_active:
+                st.markdown(
+                    f'<div class="stage-active">'
+                    f'<span style="color:{TEAL}; font-size:10px">{icon}</span>{stage}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                if st.button(f"{icon} {stage}", key=f"stage_{stage}"):
+                    st.session_state.active_stage = stage
+                    refresh_chips(stage)
+                    st.rerun()
+    
+        # ── Recent chats ──
+        st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
+        if st.session_state.messages:
+            user_msgs = [m["content"] for m in st.session_state.messages if m["role"] == "user"]
+            for msg in user_msgs[-3:]:
+                short = msg[:35] + "…" if len(msg) > 35 else msg
+                st.markdown(f'<div class="stage-item">· {short}</div>', unsafe_allow_html=True)
         else:
-            if st.button(f"{icon} {stage}", key=f"stage_{stage}"):
-                st.session_state.active_stage = stage
-                refresh_chips(stage)
-                st.rerun()
-
-    # ── Recent chats ──
-    st.markdown('<div class="nav-label">RECENT CHATS</div>', unsafe_allow_html=True)
-    if st.session_state.messages:
-        user_msgs = [m["content"] for m in st.session_state.messages if m["role"] == "user"]
-        for msg in user_msgs[-3:]:
-            short = msg[:35] + "…" if len(msg) > 35 else msg
-            st.markdown(f'<div class="stage-item">· {short}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
+            st.markdown('<div class="stage-item">No recent chats yet</div>', unsafe_allow_html=True)
 
 # ── TOP NAV ───────────────────────────────────────────────────────────────────
 with st.container(key="topnav_row"):
