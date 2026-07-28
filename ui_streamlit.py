@@ -201,6 +201,20 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 }}
 
 /* ── Top nav bar ── */
+/* Neutralize transform/filter/will-change on the ancestor chain --
+   any of these on an ancestor silently breaks position:fixed by
+   creating a new containing block, making "fixed" track that
+   ancestor instead of the real browser viewport. */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] {{
+    transform: none !important;
+    filter: none !important;
+    perspective: none !important;
+    will-change: auto !important;
+}}
 .topnav-brand {{
     color: {TEAL}; font-size: 15px; font-weight: 600;
     letter-spacing: 0.02em; display: flex; align-items: center;
