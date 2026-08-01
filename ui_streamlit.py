@@ -13,6 +13,7 @@ import streamlit as st
 import random
 import re
 import os
+import base64
 import requests
 from datetime import datetime
 
@@ -217,12 +218,13 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
     font-size: 32px; font-weight: 600;
     margin: 0 auto 12px auto;
 }}
+.team-avatar-photo {{
+    width: 120px; height: 120px; border-radius: 50%;
+    background-size: cover; background-position: center;
+    margin: 0 auto 12px auto;
+}}
 .team-name {{ font-size: 16px; font-weight: 600; color: #E6E9EF; text-align: center; margin-top: 6px; }}
 .team-role {{ font-size: 12.5px; color: {TEXT_MUTED}; text-align: center; margin-bottom: 14px; }}
-.st-key-team_page [data-testid="stImage"] {{ display: flex; justify-content: center; }}
-.st-key-team_page [data-testid="stImage"] img {{
-    border-radius: 50%; width: 120px; height: 120px; object-fit: cover;
-}}
 .st-key-team_page [data-testid="stLinkButton"] {{ display: flex; justify-content: center; }}
 .st-key-team_page [data-testid="stLinkButton"] a {{
     background: transparent !important;
@@ -318,11 +320,18 @@ NAV_ITEMS = ["Chat", "How This Works", "Sources", "Team"]
 # the page falls back to an initials placeholder -- so this works today and
 # just needs the real image files dropped in later, no code changes required.
 TEAM_MEMBERS = [
-    {"name": "Alejandra Rosas", "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/alejandra-rosas-corral/", "photo": "assets/team/alejandra.png"},
-    {"name": "Rohan Kapur",     "role": "Data Infrastructure & UI", "linkedin": "https://www.linkedin.com/in/rohan--kapur/", "photo": "assets/team/rohan.png"},
-    {"name": "Duc Nguyen",       "role": "UI / Streamlit",           "linkedin": "https://www.linkedin.com/in/ducnguyen7/", "photo": "assets/team/duc.png"},
-    {"name": "Clover Ausdemore",    "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/ausdemore/", "photo": "assets/team/clover.png"},
+    {"name": "Alejandra Rosas",  "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/alejandra-rosas-corral/", "photo": "assets/team/alejandra.png"},
+    {"name": "Rohan Kapur",      "role": "Data Infrastructure & UI", "linkedin": "https://www.linkedin.com/in/rohan--kapur/",            "photo": "assets/team/rohan.png"},
+    {"name": "Duc Nguyen",       "role": "UI / Streamlit",           "linkedin": "https://www.linkedin.com/in/ducnguyen7/",              "photo": "assets/team/duc.png"},
+    {"name": "Clover Ausdemore", "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/ausdemore/",               "photo": "assets/team/clover.png"},
 ]
+
+def _photo_data_uri(path):
+    ext  = os.path.splitext(path)[1].lower()
+    mime = "image/png" if ext == ".png" else "image/jpeg"
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    return f"data:{mime};base64,{b64}"
 
 def render_team_page():
     with st.container(key="team_page"):
@@ -339,7 +348,12 @@ def render_team_page():
         for col, member in zip(cols, TEAM_MEMBERS):
             with col:
                 if os.path.exists(member["photo"]):
-                    st.image(member["photo"], width=120)
+                    uri = _photo_data_uri(member["photo"])
+                    st.markdown(
+                        f"<div class='team-avatar-photo' "
+                        f"style=\"background-image:url('{uri}');\"></div>",
+                        unsafe_allow_html=True,
+                    )
                 else:
                     initials = "".join(p[0] for p in member["name"].split()[:2]).upper()
                     st.markdown(
