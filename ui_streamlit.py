@@ -196,10 +196,68 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
     margin-top: auto !important;
 }}
 
-/* ── Footer ── */
+/* ── Page header (reusable: Sources, How This Works, etc.) ── */
+.page-label {{
+    color: {TEAL}; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; margin: 4px 0 8px 0;
+}}
+.page-heading {{
+    font-size: 32px; font-weight: 700; color: #E6E9EF;
+    margin-bottom: 14px;
+}}
+.page-subheading {{
+    font-size: 14px; color: {TEXT_MUTED}; line-height: 1.6;
+    max-width: 640px; margin-bottom: 32px;
+}}
+.st-key-sources_page .stButton button {{
+    background: transparent !important;
+    border: none !important;
+    color: {TEXT_MUTED} !important;
+    font-size: 13px !important;
+    padding: 0 !important;
+    margin-bottom: 12px !important;
+    height: auto !important;
+}}
+.st-key-sources_page .stButton button:hover {{ color: {TEAL} !important; }}
+
+/* ── Source cards ── */
+.source-card {{
+    background: {BUBBLE_BOT}; border: 1px solid #2A3441;
+    border-radius: 16px; padding: 22px 24px; margin-bottom: 16px;
+}}
+.source-card-top {{
+    display: flex; justify-content: space-between; align-items: center;
+}}
+.source-card-title {{ font-size: 17px; font-weight: 600; color: #E6E9EF; }}
+.source-card-link {{ color: {TEXT_MUTED}; text-decoration: none; font-size: 16px; }}
+.source-card-link:hover {{ color: {TEAL}; }}
+.source-card-desc {{
+    font-size: 13px; color: {TEXT_MUTED}; line-height: 1.6; margin-top: 8px;
+}}
 .app-footer {{
     border-top: 1px solid #2A3441;
     padding: 28px 4px 8px 4px;
+}}
+.st-key-app_footer {{
+    border-top: 1px solid #2A3441;
+    padding-top: 28px; margin-top: 12px;
+}}
+.st-key-app_footer .stButton button {{
+    background: transparent !important;
+    border: none !important;
+    color: {TEXT_LABEL} !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    padding: 0 0 10px 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+}}
+.st-key-app_footer .stButton button:hover {{
+    color: {TEAL} !important;
+    text-decoration: underline;
 }}
 
 /* ── Team page ── */
@@ -370,6 +428,53 @@ def render_placeholder_page(title):
         f"<div style='color:{TEXT_MUTED}; font-size:13px;'>Content coming soon.</div>",
         unsafe_allow_html=True,
     )
+
+SOURCES_LIST = [
+    {
+        "name": "USCIS Policy Manual",
+        "desc": "The official USCIS guidance covering F-1, OPT, STEM OPT, and H-1B "
+                "eligibility, filing procedures, and status requirements.",
+        "url": "https://www.uscis.gov/policy-manual",
+    },
+    {
+        "name": "SEVP Guidance",
+        "desc": "Student and Exchange Visitor Program guidance on maintaining status, "
+                "school transfers, and SEVIS reporting requirements.",
+        "url": "https://studyinthestates.dhs.gov/",
+    },
+    {
+        "name": "8 CFR Regulations",
+        "desc": "The federal regulations that govern nonimmigrant student and "
+                "employment-based visa categories.",
+        "url": "https://www.ecfr.gov/current/title-8",
+    },
+]
+
+def render_sources_page():
+    with st.container(key="sources_page"):
+        if st.button("← Back to Chat", key="sources_back"):
+            st.session_state.active_nav = "Chat"
+            st.rerun()
+        st.markdown('<div class="page-label">SOURCES</div>', unsafe_allow_html=True)
+        st.markdown('<div class="page-heading">Grounded in official guidance.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="page-subheading">Every answer is generated only from the public '
+            'documents below — no scraping, no outside data, nothing invented.</div>',
+            unsafe_allow_html=True,
+        )
+        for src in SOURCES_LIST:
+            st.markdown(
+                f"""
+                <div class="source-card">
+                    <div class="source-card-top">
+                        <div class="source-card-title">{src['name']}</div>
+                        <a href="{src['url']}" target="_blank" class="source-card-link">↗</a>
+                    </div>
+                    <div class="source-card-desc">{src['desc']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 DAYS   = [str(d) for d in range(1, 32)]
@@ -968,37 +1073,47 @@ elif st.session_state.active_nav == "Team":
 elif st.session_state.active_nav == "How This Works":
     render_placeholder_page("How This Works")
 elif st.session_state.active_nav == "Sources":
-    render_placeholder_page("Sources")
+    render_sources_page()
 
 # ── Footer ────────────────────────────────────────────────────────────────────
-st.markdown(
-    """
-    <div class="app-footer">
-      <div style="display:flex; flex-wrap:wrap; gap:64px;">
-        <div style="flex:2; min-width:260px;">
-          <div class="footer-title">UC Berkeley MIDS Capstone — Summer 2026</div>
-          <div class="footer-about">
-            A RAG-powered assistant helping international students navigate the
-            F-1 → OPT → STEM OPT → H-1B visa pipeline. A research preview; not
-            affiliated with USCIS or SEVP.
-          </div>
-          <div class="footer-feedback">
-            <span>✎</span>
-            <a href="mailto:immigration-navigator@berkeley.edu">Give feedback</a>
-          </div>
-        </div>
-        <div style="flex:1; min-width:160px;">
-          <div class="footer-label">SOURCES</div>
-          <div class="footer-item">USCIS Policy Manual</div>
-          <div class="footer-item">SEVP Guidance</div>
-          <div class="footer-item">8 CFR Regulations</div>
-        </div>
-        <div style="flex:1; min-width:200px;">
-          <div class="footer-label">TEAM</div>
-          <div class="footer-item">Rohan · Duc · Alejandra · Clover</div>
-        </div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+with st.container(key="app_footer"):
+    f_about, f_sources, f_team = st.columns([2, 1, 1])
+
+    with f_about:
+        st.markdown(
+            """
+            <div class="footer-title">UC Berkeley MIDS Capstone — Summer 2026</div>
+            <div class="footer-about">
+                A RAG-powered assistant helping international students navigate the
+                F-1 → OPT → STEM OPT → H-1B visa pipeline. A research preview; not
+                affiliated with USCIS or SEVP.
+            </div>
+            <div class="footer-feedback">
+                <span>✎</span>
+                <a href="mailto:immigration-navigator@berkeley.edu">Give feedback</a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with f_sources:
+        if st.button("SOURCES", key="footer_nav_sources"):
+            st.session_state.active_nav = "Sources"
+            st.rerun()
+        st.markdown(
+            """
+            <div class="footer-item">USCIS Policy Manual</div>
+            <div class="footer-item">SEVP Guidance</div>
+            <div class="footer-item">8 CFR Regulations</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with f_team:
+        if st.button("TEAM", key="footer_nav_team"):
+            st.session_state.active_nav = "Team"
+            st.rerun()
+        st.markdown(
+            '<div class="footer-item">Rohan · Duc · Alejandra · Clover</div>',
+            unsafe_allow_html=True,
+        )
