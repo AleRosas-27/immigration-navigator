@@ -318,10 +318,10 @@ NAV_ITEMS = ["Chat", "How This Works", "Sources", "Team"]
 # the page falls back to an initials placeholder -- so this works today and
 # just needs the real image files dropped in later, no code changes required.
 TEAM_MEMBERS = [
-    {"name": "Alejandra Rosas", "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/alejandra-rosas-corral/", "photo": "assets/team/alejandra.jpg"},
-    {"name": "Rohan Kapur",     "role": "Data Infrastructure & UI", "linkedin": "https://www.linkedin.com/in/rohan--kapur/", "photo": "assets/team/rohan.jpg"},
-    {"name": "Duc Nguyen",       "role": "UI / Streamlit",           "linkedin": "https://www.linkedin.com/in/ducnguyen7/", "photo": "assets/team/duc.jpg"},
-    {"name": "Clover Ausdemore",    "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/ausdemore/", "photo": "assets/team/clover.jpg"},
+    {"name": "Alejandra Rosas", "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/alejandra-rosas-corral/", "photo": "assets/team/alejandra.png"},
+    {"name": "Rohan Kapur",     "role": "Data Infrastructure & UI", "linkedin": "https://www.linkedin.com/in/rohan--kapur/", "photo": "assets/team/rohan.png"},
+    {"name": "Duc Nguyen",       "role": "UI / Streamlit",           "linkedin": "https://www.linkedin.com/in/ducnguyen7/", "photo": "assets/team/duc.png"},
+    {"name": "Clover Ausdemore",    "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/ausdemore/", "photo": "assets/team/clover.png"},
 ]
 
 def render_team_page():
