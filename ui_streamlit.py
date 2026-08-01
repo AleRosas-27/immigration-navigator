@@ -12,6 +12,7 @@ Backend: FastAPI on port 8000
 import streamlit as st
 import random
 import re
+import os
 import requests
 from datetime import datetime
 
@@ -200,6 +201,42 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
     padding: 28px 4px 8px 4px;
 }}
 
+/* ── Team page ── */
+.team-heading {{
+    font-size: 28px; font-weight: 700; color: #E6E9EF;
+    text-align: center; margin: 20px 0 8px 0;
+}}
+.team-subheading {{
+    font-size: 14px; color: {TEXT_MUTED}; text-align: center;
+    max-width: 560px; margin: 0 auto 40px auto; line-height: 1.6;
+}}
+.team-avatar-placeholder {{
+    width: 120px; height: 120px; border-radius: 50%;
+    background: {BUBBLE_BOT}; color: {TEAL};
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 600;
+    margin: 0 auto 12px auto;
+}}
+.team-name {{ font-size: 16px; font-weight: 600; color: #E6E9EF; text-align: center; margin-top: 6px; }}
+.team-role {{ font-size: 12.5px; color: {TEXT_MUTED}; text-align: center; margin-bottom: 14px; }}
+.st-key-team_page [data-testid="stImage"] {{ display: flex; justify-content: center; }}
+.st-key-team_page [data-testid="stImage"] img {{
+    border-radius: 50%; width: 120px; height: 120px; object-fit: cover;
+}}
+.st-key-team_page [data-testid="stLinkButton"] {{ display: flex; justify-content: center; }}
+.st-key-team_page [data-testid="stLinkButton"] a {{
+    background: transparent !important;
+    border: 1px solid {TEAL} !important;
+    color: {TEAL} !important;
+    border-radius: 20px !important;
+    font-size: 12.5px !important;
+    padding: 6px 18px !important;
+    text-decoration: none !important;
+}}
+.st-key-team_page [data-testid="stLinkButton"] a:hover {{
+    background: {TEAL} !important; color: #0D1117 !important;
+}}
+
 /* ── Top nav bar ── */
 .topnav-brand {{
     color: {TEAL}; font-size: 15px; font-weight: 600;
@@ -276,6 +313,49 @@ EMPLOYER_OPTIONS = [
 ]
 
 NAV_ITEMS = ["Chat", "How This Works", "Sources", "Team"]
+
+# Photo paths point into assets/team/ in the repo. If a file doesn't exist yet,
+# the page falls back to an initials placeholder -- so this works today and
+# just needs the real image files dropped in later, no code changes required.
+TEAM_MEMBERS = [
+    {"name": "Alejandra Rosas", "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/alejandra-rosas-corral/", "photo": "assets/team/alejandra.jpg"},
+    {"name": "Rohan Kapur",     "role": "Data Infrastructure & UI", "linkedin": "https://www.linkedin.com/in/rohan--kapur/", "photo": "assets/team/rohan.jpg"},
+    {"name": "Duc Nguyen",       "role": "UI / Streamlit",           "linkedin": "https://www.linkedin.com/in/ducnguyen7/", "photo": "assets/team/duc.jpg"},
+    {"name": "Clover Ausdemore",    "role": "RAG Engineer",             "linkedin": "https://www.linkedin.com/in/ausdemore/", "photo": "assets/team/clover.jpg"},
+]
+
+def render_team_page():
+    with st.container(key="team_page"):
+        st.markdown(
+            "<div class='team-heading'>Hey, we're the team behind Immigration Navigator!</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div class='team-subheading'>This is our Summer 2026 Capstone project "
+            "at the UC Berkeley MIDS program.</div>",
+            unsafe_allow_html=True,
+        )
+        cols = st.columns(len(TEAM_MEMBERS))
+        for col, member in zip(cols, TEAM_MEMBERS):
+            with col:
+                if os.path.exists(member["photo"]):
+                    st.image(member["photo"], width=120)
+                else:
+                    initials = "".join(p[0] for p in member["name"].split()[:2]).upper()
+                    st.markdown(
+                        f"<div class='team-avatar-placeholder'>{initials}</div>",
+                        unsafe_allow_html=True,
+                    )
+                st.markdown(f"<div class='team-name'>{member['name']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='team-role'>{member['role']}</div>", unsafe_allow_html=True)
+                st.link_button("LinkedIn ↗", member["linkedin"], use_container_width=True)
+
+def render_placeholder_page(title):
+    st.markdown(f"<h3 style='color:{TEAL};'>{title}</h3>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='color:{TEXT_MUTED}; font-size:13px;'>Content coming soon.</div>",
+        unsafe_allow_html=True,
+    )
 
 MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 DAYS   = [str(d) for d in range(1, 32)]
@@ -777,97 +857,104 @@ with st.container(key="topnav_row"):
                         st.rerun()
 
 # ── MAIN AREA ─────────────────────────────────────────────────────────────────
-chat_col, source_col = st.columns([3, 1], gap="medium")
-
-with chat_col:
-    active = st.session_state.active_stage
-    icon   = STAGES[active]["icon"]
-    st.markdown(f"<h4 style='color:{TEAL};'>{icon} {active}</h4>", unsafe_allow_html=True)
-
-    # Profile summary banner (show if at least one field is set)
-    profile = build_profile()
-    filled  = [v for v in profile.values() if v]
-    if filled:
-        parts = []
-        if profile["visa_status"]:    parts.append(profile["visa_status"])
-        if profile["degree_field"]:   parts.append(profile["degree_field"])
-        if profile["graduation_date"]:parts.append(f"graduating {profile['graduation_date']}")
-        if profile["employer_type"]:  parts.append(profile["employer_type"])
-        summary = " · ".join(parts)
-        st.markdown(
-            f'<div class="welcome-banner" style="color:#9FE1CB; font-size:12px;">'
-            f'<span style="color:{TEAL}; font-weight:600;">Your profile</span> &nbsp;{summary}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-    # Chat history
-    for msg in st.session_state.messages:
-        cls = "user-bubble" if msg["role"] == "user" else "bot-bubble"
-        st.markdown(
-            f"<div style='overflow:auto; margin-bottom:10px;'>"
-            f"<div class='{cls}'>{msg['content']}</div></div>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Suggested question chips
-    chip_label_col, shuffle_col = st.columns([5, 1])
-    with chip_label_col:
-        st.caption(f"Suggested questions for {active}:")
-    with shuffle_col:
-        if st.button("🔀", key="shuffle", help="Show different questions"):
-            refresh_chips(active)
-            st.rerun()
-
-    chips = st.session_state.current_chips
-    cols  = st.columns(len(chips))
-    clicked = None
-    for col, chip in zip(cols, chips):
-        if col.button(chip, use_container_width=True, key=f"chip_{chip}"):
-            clicked = chip
-
-    if clicked:
-        st.session_state._pending = clicked
-        st.rerun()
-
-    # Chat input
-    prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
-
-    if "_pending" in st.session_state:
-        prompt = st.session_state.pop("_pending")
-
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        answer, sources = get_rag_response(prompt, build_profile())
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-        st.session_state.sources = sources
-        st.rerun()
-
-# ── Sources panel ─────────────────────────────────────────────────────────────
-with source_col:
-    with st.expander("SOURCES", expanded=True):
-        if st.session_state.sources:
-            for s in st.session_state.sources:
-                url_html = (
-                    f"<a href='{s['url']}' target='_blank' "
-                    f"style='color:{TEAL}; font-size:10px;'>↗ View source</a>"
-                    if s.get("url") else ""
-                )
-                st.markdown(
-                    f"<div class='src-card'>"
-                    f"<div class='src-id'>{s['id']} {s['ref']}</div>"
-                    f"{url_html}"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-        else:
+if st.session_state.active_nav == "Chat":
+    chat_col, source_col = st.columns([3, 1], gap="medium")
+    
+    with chat_col:
+        active = st.session_state.active_stage
+        icon   = STAGES[active]["icon"]
+        st.markdown(f"<h4 style='color:{TEAL};'>{icon} {active}</h4>", unsafe_allow_html=True)
+    
+        # Profile summary banner (show if at least one field is set)
+        profile = build_profile()
+        filled  = [v for v in profile.values() if v]
+        if filled:
+            parts = []
+            if profile["visa_status"]:    parts.append(profile["visa_status"])
+            if profile["degree_field"]:   parts.append(profile["degree_field"])
+            if profile["graduation_date"]:parts.append(f"graduating {profile['graduation_date']}")
+            if profile["employer_type"]:  parts.append(profile["employer_type"])
+            summary = " · ".join(parts)
             st.markdown(
-                f"<div class='src-desc'>Sources for each answer appear here, "
-                f"grounded in USCIS regulations, SEVP guidance, and the CFR.</div>",
+                f'<div class="welcome-banner" style="color:#9FE1CB; font-size:12px;">'
+                f'<span style="color:{TEAL}; font-weight:600;">Your profile</span> &nbsp;{summary}'
+                f'</div>',
                 unsafe_allow_html=True,
             )
+    
+        # Chat history
+        for msg in st.session_state.messages:
+            cls = "user-bubble" if msg["role"] == "user" else "bot-bubble"
+            st.markdown(
+                f"<div style='overflow:auto; margin-bottom:10px;'>"
+                f"<div class='{cls}'>{msg['content']}</div></div>",
+                unsafe_allow_html=True,
+            )
+    
+        st.markdown("<br>", unsafe_allow_html=True)
+    
+        # Suggested question chips
+        chip_label_col, shuffle_col = st.columns([5, 1])
+        with chip_label_col:
+            st.caption(f"Suggested questions for {active}:")
+        with shuffle_col:
+            if st.button("🔀", key="shuffle", help="Show different questions"):
+                refresh_chips(active)
+                st.rerun()
+    
+        chips = st.session_state.current_chips
+        cols  = st.columns(len(chips))
+        clicked = None
+        for col, chip in zip(cols, chips):
+            if col.button(chip, use_container_width=True, key=f"chip_{chip}"):
+                clicked = chip
+    
+        if clicked:
+            st.session_state._pending = clicked
+            st.rerun()
+    
+        # Chat input
+        prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
+    
+        if "_pending" in st.session_state:
+            prompt = st.session_state.pop("_pending")
+    
+        if prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            answer, sources = get_rag_response(prompt, build_profile())
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.sources = sources
+            st.rerun()
+    
+    # ── Sources panel ─────────────────────────────────────────────────────────────
+    with source_col:
+        with st.expander("SOURCES", expanded=True):
+            if st.session_state.sources:
+                for s in st.session_state.sources:
+                    url_html = (
+                        f"<a href='{s['url']}' target='_blank' "
+                        f"style='color:{TEAL}; font-size:10px;'>↗ View source</a>"
+                        if s.get("url") else ""
+                    )
+                    st.markdown(
+                        f"<div class='src-card'>"
+                        f"<div class='src-id'>{s['id']} {s['ref']}</div>"
+                        f"{url_html}"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.markdown(
+                    f"<div class='src-desc'>Sources for each answer appear here, "
+                    f"grounded in USCIS regulations, SEVP guidance, and the CFR.</div>",
+                    unsafe_allow_html=True,
+                )
+elif st.session_state.active_nav == "Team":
+    render_team_page()
+elif st.session_state.active_nav == "How This Works":
+    render_placeholder_page("How This Works")
+elif st.session_state.active_nav == "Sources":
+    render_placeholder_page("Sources")
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown(
