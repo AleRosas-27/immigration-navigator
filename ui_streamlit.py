@@ -10,9 +10,11 @@ Backend: FastAPI on port 8000
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import random
 import re
 import os
+import json
 import base64
 import requests
 from datetime import datetime
@@ -37,6 +39,12 @@ TEXT_LABEL = "#6B7682"
 # ── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown(f"""
 <style>
+/* Hide Streamlit's default Deploy button + toolbar */
+.stDeployButton {{ display: none !important; }}
+[data-testid="stToolbar"] {{ display: none !important; }}
+[data-testid="stDecoration"] {{ display: none !important; }}
+header[data-testid="stHeader"] {{ display: none !important; }}
+
 /* ── Base ── */
 .stApp {{ background-color: {PAGE_BG}; font-size: 14px; }}
 section[data-testid="stSidebar"] {{ background-color: {PANEL}; }}
@@ -114,6 +122,17 @@ div[data-testid="stSidebar"] .stButton button:hover {{
 .stChatInput textarea {{
     background: {PAGE_BG} !important;
     color: #C2CAD4 !important;
+}}
+/* Focus state: use teal border instead of default red */
+.stChatInput [data-baseweb="textarea"]:focus-within,
+div[data-testid="stChatInput"] > div:focus-within {{
+    border-color: {TEAL} !important;
+    box-shadow: 0 0 0 1px {TEAL} !important;
+}}
+/* Right-align the shuffle button so it lines up with the input's right edge */
+.st-key-shuffle {{
+    display: flex !important;
+    justify-content: flex-end !important;
 }}
 
 /* ── Modal overlay ── */
@@ -421,6 +440,61 @@ def render_team_page():
                 st.markdown(f"<div class='team-name'>{member['name']}</div>", unsafe_allow_html=True)
                 st.markdown(f"<div class='team-role'>{member['role']}</div>", unsafe_allow_html=True)
                 st.link_button("LinkedIn ↗", member["linkedin"], use_container_width=True)
+
+def render_how_it_works_page():
+    with st.container(key="how_page"):
+        if st.button("← Back to Chat", key="how_back"):
+            st.session_state.active_nav = "Chat"
+            st.rerun()
+        st.markdown('<div class="page-label">HOW THIS WORKS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="page-heading">Smart answers, grounded in real law.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="page-subheading">Immigration Navigator pairs a large language model '
+            'with a curated library of official U.S. immigration guidance. You get the fluency '
+            'of AI backed by authoritative sources, so every answer is one you can trust and '
+            'verify.</div>',
+            unsafe_allow_html=True,
+        )
+
+        steps = [
+            ("1 · Understands what you're asking",
+             "The AI reads your question in the context of your visa stage, degree type, and "
+             "graduation timeline. It works out what you actually mean, so you can ask naturally, "
+             "the way you would ask an advisor."),
+            ("2 · Draws on authoritative knowledge",
+             "The model reasons over a curated knowledge base of USCIS Policy Manual chapters, "
+             "SEVP guidance, and federal regulations. Its answers come from official law rather "
+             "than from open web content or guesswork."),
+            ("3 · Explains it clearly and shows its work",
+             "The AI writes a clear, personalized answer and cites the exact source behind every "
+             "claim. You get an explanation in plain English alongside a direct link to the "
+             "official document, so you can confirm it yourself."),
+            ("4 · Calculates your deadlines",
+             "For timing questions, the assistant computes your OPT, STEM OPT, and H-1B cap-gap "
+             "dates from your graduation date, so the guidance you receive comes with precise, "
+             "reliable numbers."),
+        ]
+        for title, body in steps:
+            st.markdown(
+                f"""
+                <div class="source-card">
+                    <div class="source-card-title">{title}</div>
+                    <div class="source-card-desc">{body}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown(
+            f"<div style='color:{TEXT_LABEL}; font-size:12px; line-height:1.6; "
+            f"margin-top:24px; max-width:640px;'>Immigration Navigator is a research "
+            f"preview built for a UC Berkeley MIDS capstone. It is not legal advice and "
+            f"is not affiliated with USCIS or SEVP. Always confirm important decisions "
+            f"with your Designated School Official (DSO) or a licensed immigration "
+            f"attorney.</div>",
+            unsafe_allow_html=True,
+        )
+
 
 def render_placeholder_page(title):
     st.markdown(f"<h3 style='color:{TEAL};'>{title}</h3>", unsafe_allow_html=True)
@@ -1002,42 +1076,65 @@ if st.session_state.active_nav == "Chat":
             )
     
         # Chat history
-        for msg in st.session_state.messages:
+        for i, msg in enumerate(st.session_state.messages):
             cls = "user-bubble" if msg["role"] == "user" else "bot-bubble"
             st.markdown(
-                f"<div style='overflow:auto; margin-bottom:10px;'>"
+                f"<div style='overflow:auto; margin-bottom:4px;'>"
                 f"<div class='{cls}'>{msg['content']}</div></div>",
                 unsafe_allow_html=True,
             )
+            # Copy button under assistant answers only
+            if msg["role"] == "assistant":
+                # strip HTML tags for a clean plain-text copy
+                plain = re.sub(r"<[^>]+>", "", msg["content"])
+                plain_json = json.dumps(plain)  # safely escape for JS
+                components.html(
+                    f"""
+                    <div style="margin:0 0 14px 2px;">
+                        <button id="copybtn"
+                            onclick='navigator.clipboard.writeText({plain_json}).then(()=>{{
+                                     var b=document.getElementById("copybtn");
+                                     b.innerText="✓ Copied";
+                                     setTimeout(function(){{b.innerText="⧉ Copy";}},1500);
+                                     }});'
+                            style="background:transparent; border:none; color:{TEXT_LABEL};
+                                   font-size:12px; cursor:pointer; padding:2px 0;
+                                   font-family:inherit;">
+                            ⧉ Copy
+                        </button>
+                    </div>
+                    """,
+                    height=32,
+                )
     
         st.markdown("<br>", unsafe_allow_html=True)
-    
-        # Suggested question chips
-        chip_label_col, shuffle_col = st.columns([5, 1])
-        with chip_label_col:
-            st.caption(f"Suggested questions for {active}:")
-        with shuffle_col:
-            if st.button("🔀", key="shuffle", help="Show different questions"):
-                refresh_chips(active)
-                st.rerun()
-    
+
+        # Chat input
+        prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
+
+        # AI disclaimer
+        st.markdown(
+            f"<div style='text-align:center; color:{TEXT_LABEL}; font-size:13px; "
+            f"margin:6px 0 14px 0;'>Immigration Navigator is AI and can make "
+            f"mistakes. Please double-check responses.</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Suggested question chips (no label, no shuffle button)
         chips = st.session_state.current_chips
         cols  = st.columns(len(chips))
         clicked = None
         for col, chip in zip(cols, chips):
             if col.button(chip, use_container_width=True, key=f"chip_{chip}"):
                 clicked = chip
-    
+
         if clicked:
             st.session_state._pending = clicked
             st.rerun()
-    
-        # Chat input
-        prompt = st.chat_input("Ask about visas, deadlines, eligibility…")
-    
+
         if "_pending" in st.session_state:
             prompt = st.session_state.pop("_pending")
-    
+
         if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             answer, sources = get_rag_response(prompt, build_profile())
@@ -1071,7 +1168,7 @@ if st.session_state.active_nav == "Chat":
 elif st.session_state.active_nav == "Team":
     render_team_page()
 elif st.session_state.active_nav == "How This Works":
-    render_placeholder_page("How This Works")
+    render_how_it_works_page()
 elif st.session_state.active_nav == "Sources":
     render_sources_page()
 
@@ -1102,9 +1199,9 @@ with st.container(key="app_footer"):
             st.rerun()
         st.markdown(
             """
-            <div class="footer-item">USCIS Policy Manual</div>
-            <div class="footer-item">SEVP Guidance</div>
-            <div class="footer-item">8 CFR Regulations</div>
+            <div class="footer-item"><a href="https://www.uscis.gov/policy-manual" target="_blank" style="color:#8B95A1; text-decoration:none;">USCIS Policy Manual</a></div>
+            <div class="footer-item"><a href="https://studyinthestates.dhs.gov/" target="_blank" style="color:#8B95A1; text-decoration:none;">SEVP Guidance</a></div>
+            <div class="footer-item"><a href="https://www.ecfr.gov/current/title-8" target="_blank" style="color:#8B95A1; text-decoration:none;">8 CFR Regulations</a></div>
             """,
             unsafe_allow_html=True,
         )
