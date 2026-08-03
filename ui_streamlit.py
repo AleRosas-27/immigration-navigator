@@ -353,7 +353,7 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 """, unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-API_URL = "http://localhost:8000/ask"
+API_URL = "http://localhost:8001/ask"
 
 VISA_OPTIONS = [
     "F-1 Student",
