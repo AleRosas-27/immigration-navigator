@@ -20,7 +20,7 @@ import boto3
 from typing import Optional
 
 from langchain_groq import ChatGroq
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from fastembed import TextEmbedding
 import chromadb
 
@@ -54,11 +54,15 @@ _has_synonyms    = False
 # ── Prompt ─────────────────────────────────────────────────────────────────────
 
 PROMPT = ChatPromptTemplate.from_template("""
-You are ImmigrationNavigator, an AI assistant helping international students
-navigate U.S. visa processes. Answer ONLY using the provided context.
-Cite every claim with [Source: label, url].
-If context is insufficient, say:
-"I don't have enough information. Please consult your ISO or an immigration attorney."
+You are ImmigrationNavigator, an expert AI assistant helping international students navigate the F-1 to OPT to STEM OPT to H-1B visa pipeline in the United States.
+
+INSTRUCTIONS:
+- Answer ONLY using the provided context. Never use outside knowledge.
+- Cite every factual claim with [Source: label, url].
+- Be specific and actionable — include form numbers, deadlines, and eligibility criteria when available.
+- Personalize your answer to the user profile below.
+- If the context does not contain enough information, say: I don't have enough information to answer this fully. Please consult your ISO or an immigration attorney.
+- Structure your answer clearly with short paragraphs or bullets when helpful.
 
 User Profile:
 - Visa status: {visa_status}
@@ -71,7 +75,7 @@ Context:
 
 Question: {question}
 
-Answer (personalized, cite every claim):
+Answer (personalized, cited, actionable):
 """)
 
 
@@ -89,7 +93,7 @@ def _get_embedding(texts: list[str]) -> list[list[float]]:
     global _embedding_model
     if USE_OPENAI:
         from langchain_openai import OpenAIEmbeddings
-        model = OpenAIEmbeddings(model="text-embedding-3-small")
+        model = OpenAIEmbeddings(model="text-embedding-3-large")
         return model.embed_documents(texts)
     else:
         return [e.tolist() for e in _embedding_model.embed(texts)]
@@ -151,7 +155,7 @@ def initialize():
             os.environ["OPENAI_API_KEY"] = secrets["OPENAI_API_KEY"]
         from langchain_openai import ChatOpenAI
         _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-        print("Using OpenAI (text-embedding-3-small + GPT-4o-mini)")
+        print("Using OpenAI (text-embedding-3-large + GPT-4o-mini)")
     else:
         if not os.getenv("GROQ_API_KEY"):
             secrets = _get_secret("immigration-navigator/groq")
