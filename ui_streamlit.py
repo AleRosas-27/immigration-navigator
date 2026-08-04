@@ -424,10 +424,23 @@ def render_team_page():
 
 def render_placeholder_page(title):
     st.markdown(f"<h3 style='color:{TEAL};'>{title}</h3>", unsafe_allow_html=True)
-    st.markdown(
-        f"<div style='color:{TEXT_MUTED}; font-size:13px;'>Content coming soon.</div>",
-        unsafe_allow_html=True,
-    )
+
+    st.markdown("""Our knowledge base is built from four official U.S. government sources — the USCIS Policy Manual,
+the Adjudicator's Field Manual, the State Department's Visa Bulletin, and the Federal Register —
+nearly a million words across 3,500 documents, each kept fresh on a schedule matched to how that source actually updates.
+
+On top of that corpus sits a five-stage Retrieval-Augmented Generation (RAG) pipeline engineered specifically for the pitfalls of immigration law:
+
+- **Synonym expansion** — bridges the gap between everyday language ("work permit") and legal terminology ("employment authorization document").
+- **Profile injection** — conditions retrieval on the user's visa status, degree, and graduation timeline.
+- **Vector retrieval** — via FastEmbed and ChromaDB surfaces the most relevant policy chunks.
+- **Custom reranking** — actively corrects for one of RAG's most dangerous failure modes: confusing semantically similar but legally distinct visa categories, like H-1B and J-1.
+- **Citation-enforced generation** — every answer is traceable to a real source, or the system declines rather than guess.
+
+Deadline math is handled by a deterministic Python rules engine, not the LLM — because in immigration, a wrong date can cost someone their legal status. The full system runs on AWS behind a FastAPI backend.
+    """)
+
+    st.caption("This is a research preview. ImmigrationNavigator is not affiliated with USCIS, SEVP, or any government agency. Always consult your ISO or a licensed immigration attorney for official guidance.")
 
 SOURCES_LIST = [
     {
