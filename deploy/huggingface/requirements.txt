@@ -1,0 +1,13 @@
+# Runtime-only dependencies for the Hugging Face Space.
+# push_to_hf.py pins chromadb and fastembed to the exact versions installed
+# where it runs (EC2), so the copied vector store opens without a format mismatch.
+fastapi>=0.111.0
+uvicorn>=0.29.0
+pydantic>=2.0.0
+langchain-core>=0.2.0
+langchain-groq>=0.1.0
+chromadb
+fastembed
+boto3>=1.34.0
+streamlit>=1.35.0
+requests>=2.31.0

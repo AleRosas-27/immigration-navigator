@@ -353,7 +353,8 @@ div[data-testid="stMainBlockContainer"] > div[data-testid="stVerticalBlock"] > d
 """, unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-API_URL = "http://localhost:8001/ask"
+# Defaults to the EC2 setup; the Hugging Face container sets API_URL to port 8000
+API_URL = os.getenv("API_URL", "http://localhost:8001/ask")
 
 VISA_OPTIONS = [
     "F-1 Student",
@@ -636,7 +637,7 @@ def get_rag_response(question, profile):
         response = requests.post(
             API_URL,
             json={"question": question, "profile": profile},
-            timeout=30,
+            timeout=60,
         ).json()
         raw_answer = response.get("answer", "No answer returned.")
         return parse_sources(raw_answer)
@@ -664,12 +665,16 @@ def skip_modal():
     st.session_state.show_modal    = False
 
 # ── Password gate ─────────────────────────────────────────────────────────────
+APP_PASSWORD = os.getenv("APP_PASSWORD", "berkeley2026")  # set to "" to make the site public
+
 def check_password():
+    if not APP_PASSWORD:
+        return
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
         st.text_input("Password", type="password", key="password")
-        if st.session_state.get("password") == "berkeley2026":
+        if st.session_state.get("password") == APP_PASSWORD:
             st.session_state.authenticated = True
             st.rerun()
         else:
